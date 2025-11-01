@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Обработанные сообщения - Telegram Parser SaaS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-envelope-open-text"></i> Обработанные сообщения (CRM)</h2>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Статус</label>
+                        <select name="status" class="form-select">
+                            <option value="">Все</option>
+                            <option value="new" {% if status_filter == 'new' %}selected{% endif %}>Новые</option>
+                            <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>В работе</option>
+                            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Завершено</option>
+                            <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Отклонено</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Период</label>
+                        <select name="date" class="form-select">
+                            <option value="">Все время</option>
+                            <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Сегодня</option>
+                            <option value="week" {% if date_filter == 'week' %}selected{% endif %}>Неделя</option>
+                            <option value="month" {% if date_filter == 'month' %}selected{% endif %}>Месяц</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary d-block w-100">
+                            <i class="fas fa-filter"></i> Применить фильтры
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Список сообщений -->
+<div class="row">
+    <div class="col-12">
+        {% if page_obj %}
+            {% for message in page_obj %}
+            <div class="card mb-3 message-row status-{{ message.crm_status }}">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="card-title">
+                                От: <strong>{{ message.sender_name|default:"Неизвестно" }}</strong>
+                                {% if message.sender_username %} (@{{ message.sender_username }}){% endif %}
+                            </h5>
+                            <p class="card-text">{{ message.message_text|truncatewords:50 }}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-tags"></i> {{ message.matched_keywords_display }} | 
+                                <i class="fas fa-clock"></i> {{ message.processed_at|date:"d.m.Y H:i" }}
+                            </small>
+                        </div>
+                        <div class="col-md-4">
+                            <form method="post" action="{% url 'dashboard:update_message_status' message.id %}">
+                                {% csrf_token %}
+                                <select name="status" class="form-select mb-2" onchange="this.form.submit()">
+                                    <option value="new" {% if message.crm_status == 'new' %}selected{% endif %}>🆕 Новое</option>
+                                    <option value="in_progress" {% if message.crm_status == 'in_progress' %}selected{% endif %}>⏳ В работе</option>
+                                    <option value="completed" {% if message.crm_status == 'completed' %}selected{% endif %}>✅ Завершено</option>
+                                    <option value="rejected" {% if message.crm_status == 'rejected' %}selected{% endif %}>❌ Отклонено</option>
+                                </select>
+                            </form>
+                            {% if message.message_link %}
+                            <a href="{{ message.message_link }}" target="_blank" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-external-link-alt"></i> Открыть в Telegram
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Пока нет обработанных сообщений
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

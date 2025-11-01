@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Управление Парсером{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4 text-gray-800">
+                <i class="fas fa-robot"></i> Управление Telegram Парсером
+            </h1>
+        </div>
+    </div>
+
+    <!-- Статус бота -->
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Статус Парсера</h6>
+                    <div id="status-indicator" class="badge badge-secondary">
+                        <i class="fas fa-circle"></i> Проверка...
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Основная информация -->
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Статус:</strong></td>
+                                    <td id="bot-status">
+                                        {% if bot_status.is_running %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-play"></i> Запущен
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-stop"></i> Остановлен
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Здоровье:</strong></td>
+                                    <td id="bot-health">
+                                        {% if bot_status.is_healthy %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-heartbeat"></i> Здоров
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-warning">
+                                                <i class="fas fa-exclamation-triangle"></i> Требует внимания
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Время работы:</strong></td>
+                                    <td id="bot-uptime">{{ bot_status.uptime }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Запущен:</strong></td>
+                                    <td id="bot-started">
+                                        {% if bot_status.started_at %}
+                                            {{ bot_status.started_at|date:"d.m.Y H:i" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Статистика -->
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Чатов мониторится:</strong></td>
+                                    <td id="total-chats">{{ bot_status.total_chats_monitored }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Активных пользователей:</strong></td>
+                                    <td id="total-users">{{ bot_status.total_users }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Сообщений сегодня:</strong></td>
+                                    <td id="messages-today">{{ bot_status.messages_processed_today }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Всего сообщений:</strong></td>
+                                    <td id="messages-total">{{ bot_status.messages_processed_total }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ошибок:</strong></td>
+                                    <td id="errors-count">
+                                        <span class="{% if bot_status.errors_count > 0 %}text-danger{% else %}text-success{% endif %}">
+                                            {{ bot_status.errors_count }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Последняя ошибка -->
+                    {% if bot_status.last_error %}
+                    <div class="alert alert-danger mt-3" role="alert">
+                        <strong><i class="fas fa-exclamation-circle"></i> Последняя ошибка:</strong><br>
+                        <small>{{ bot_status.last_error_at|date:"d.m.Y H:i" }}</small><br>
+                        <code>{{ bot_status.last_error }}</code>
+                    </div>
+                    {% endif %}
+
+                    <!-- Кнопки управления -->
+                    <div class="mt-4 text-center">
+                        {% if request.user.is_staff %}
+                            <button id="btn-start" class="btn btn-success btn-lg {% if bot_status.is_running %}d-none{% endif %}" onclick="startParser()">
+                                <i class="fas fa-play"></i> Запустить Парсер
+                            </button>
+                            <button id="btn-stop" class="btn btn-danger btn-lg {% if not bot_status.is_running %}d-none{% endif %}" onclick="stopParser()">
+                                <i class="fas fa-stop"></i> Остановить Парсер
+                            </button>
+                            <button id="btn-refresh" class="btn btn-primary btn-lg" onclick="refreshStatus()">
+                                <i class="fas fa-sync"></i> Обновить Статус
+                            </button>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Управление парсером доступно только администраторам
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Глобальные чаты -->
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-comments"></i> Статистика Чатов
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="h2 text-primary">{{ total_global_chats }}</div>
+                            <p class="text-muted">Активных глобальных чатов</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h2 text-success">{{ total_users }}</div>
+                            <p class="text-muted">Активных пользователей</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h2 text-info">{{ bot_status.messages_processed_today }}</div>
+                            <p class="text-muted">Сообщений обработано сегодня</p>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'dashboard:global_chats' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Управление Глобальными Чатами
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast для уведомлений -->
+<div class="position-fixed bottom-0 right-0 p-3" style="z-index: 5; right: 0; bottom: 0;">
+    <div id="toast" class="toast hide" role="alert" data-delay="3000">
+        <div class="toast-header">
+            <strong class="mr-auto">Управление Парсером</strong>
+            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast">&times;</button>
+        </div>
+        <div class="toast-body" id="toast-body"></div>
+    </div>
+</div>
+
+<script>
+// CSRF Token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// Показать уведомление
+function showToast(message, isSuccess = true) {
+    const toast = document.getElementById('toast');
+    const toastBody = document.getElementById('toast-body');
+    const toastHeader = toast.querySelector('.toast-header');
+    
+    toastBody.textContent = message;
+    toastHeader.className = isSuccess ? 'toast-header bg-success text-white' : 'toast-header bg-danger text-white';
+    
+    $(toast).toast('show');
+}
+
+// Запустить парсер
+function startParser() {
+    const btn = document.getElementById('btn-start');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Запуск...';
+
+    fetch('{% url "dashboard:start_parser" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, true);
+            setTimeout(refreshStatus, 1000);
+        } else {
+            showToast(data.message, false);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play"></i> Запустить Парсер';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Ошибка при запуске парсера', false);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play"></i> Запустить Парсер';
+    });
+}
+
+// Остановить парсер
+function stopParser() {
+    if (!confirm('Вы уверены, что хотите остановить парсер?')) {
+        return;
+    }
+
+    const btn = document.getElementById('btn-stop');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Остановка...';
+
+    fetch('{% url "dashboard:stop_parser" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, true);
+            setTimeout(refreshStatus, 1000);
+        } else {
+            showToast(data.message, false);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-stop"></i> Остановить Парсер';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Ошибка при остановке парсера', false);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-stop"></i> Остановить Парсер';
+    });
+}
+
+// Обновить статус
+function refreshStatus() {
+    const indicator = document.getElementById('status-indicator');
+    indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверка...';
+
+    fetch('{% url "dashboard:parser_status" %}')
+    .then(response => response.json())
+    .then(data => {
+        // Обновляем индикатор статуса
+        if (data.is_running && data.is_healthy) {
+            indicator.className = 'badge badge-success';
+            indicator.innerHTML = '<i class="fas fa-circle"></i> Работает';
+        } else if (data.is_running && !data.is_healthy) {
+            indicator.className = 'badge badge-warning';
+            indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Проблемы';
+        } else {
+            indicator.className = 'badge badge-danger';
+            indicator.innerHTML = '<i class="fas fa-circle"></i> Остановлен';
+        }
+
+        // Обновляем кнопки
+        const btnStart = document.getElementById('btn-start');
+        const btnStop = document.getElementById('btn-stop');
+        
+        if (data.is_running) {
+            btnStart.classList.add('d-none');
+            btnStop.classList.remove('d-none');
+            btnStop.disabled = false;
+            btnStop.innerHTML = '<i class="fas fa-stop"></i> Остановить Парсер';
+        } else {
+            btnStop.classList.add('d-none');
+            btnStart.classList.remove('d-none');
+            btnStart.disabled = false;
+            btnStart.innerHTML = '<i class="fas fa-play"></i> Запустить Парсер';
+        }
+
+        // Обновляем данные
+        document.getElementById('bot-uptime').textContent = data.uptime || '-';
+        document.getElementById('total-chats').textContent = data.total_chats || 0;
+        document.getElementById('total-users').textContent = data.total_users || 0;
+        document.getElementById('messages-today').textContent = data.messages_today || 0;
+        document.getElementById('messages-total').textContent = data.messages_total || 0;
+        document.getElementById('errors-count').textContent = data.errors_count || 0;
+
+        showToast('Статус обновлен', true);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        indicator.className = 'badge badge-secondary';
+        indicator.innerHTML = '<i class="fas fa-question"></i> Ошибка';
+        showToast('Ошибка при получении статуса', false);
+    });
+}
+
+// Автообновление статуса каждые 30 секунд
+setInterval(function() {
+    fetch('{% url "dashboard:parser_status" %}')
+    .then(response => response.json())
+    .then(data => {
+        const indicator = document.getElementById('status-indicator');
+        
+        if (data.is_running && data.is_healthy) {
+            indicator.className = 'badge badge-success';
+            indicator.innerHTML = '<i class="fas fa-circle"></i> Работает';
+        } else if (data.is_running && !data.is_healthy) {
+            indicator.className = 'badge badge-warning';
+            indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Проблемы';
+        } else {
+            indicator.className = 'badge badge-danger';
+            indicator.innerHTML = '<i class="fas fa-circle"></i> Остановлен';
+        }
+
+        document.getElementById('messages-today').textContent = data.messages_today || 0;
+        document.getElementById('messages-total').textContent = data.messages_total || 0;
+    });
+}, 30000);
+
+// Обновить статус при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(refreshStatus, 500);
+});
+</script>
+{% endblock %}

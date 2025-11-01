@@ -1,0 +1,475 @@
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinLengthValidator
+from django.utils import timezone
+import json
+
+
+class GlobalChat(models.Model):
+    """Глобальные чаты, доступные всем пользователям"""
+    chat_id = models.BigIntegerField(unique=True, verbose_name="ID чата Telegram")
+    name = models.CharField(max_length=500, verbose_name="Название чата")
+    invite_link = models.URLField(max_length=500, blank=True, null=True, verbose_name="Ссылка на чат")
+    is_active = models.BooleanField(default=True, verbose_name="Чат активен")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Добавлен")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлен")
+    
+    class Meta:
+        verbose_name = "Глобальный чат"
+        verbose_name_plural = "Глобальные чаты"
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['chat_id']),
+            models.Index(fields=['is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.chat_id})"
+    
+    def get_enabled_users_count(self):
+        """Количество пользователей с включенным чатом"""
+        return self.user_settings.filter(is_enabled=True).count()
+
+
+class UserChatSettings(models.Model):
+    """Настройки пользователя для глобальных чатов"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='chat_settings',
+        verbose_name="Пользователь"
+    )
+    global_chat = models.ForeignKey(
+        GlobalChat,
+        on_delete=models.CASCADE,
+        related_name='user_settings',
+        verbose_name="Глобальный чат"
+    )
+    is_enabled = models.BooleanField(default=True, verbose_name="Включен для пользователя")
+    enabled_at = models.DateTimeField(auto_now_add=True, verbose_name="Включен")
+    disabled_at = models.DateTimeField(null=True, blank=True, verbose_name="Выключен")
+    
+    class Meta:
+        verbose_name = "Настройка чата пользователя"
+        verbose_name_plural = "Настройки чатов пользователей"
+        unique_together = [['user', 'global_chat']]
+        indexes = [
+            models.Index(fields=['user', 'is_enabled']),
+        ]
+    
+    def __str__(self):
+        status = "✅" if self.is_enabled else "❌"
+        return f"{status} {self.user.username} - {self.global_chat.name}"
+    
+    def toggle(self):
+        """Переключить статус включения"""
+        self.is_enabled = not self.is_enabled
+        if not self.is_enabled:
+            self.disabled_at = timezone.now()
+        self.save()
+
+
+class KeywordGroup(models.Model):
+    """Группы ключевых слов пользователя"""
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Пользователь",
+        related_name="keyword_groups"
+    )
+    name = models.CharField(
+        max_length=255,
+        verbose_name="Название группы",
+        validators=[MinLengthValidator(2)]
+    )
+    keywords = models.JSONField(
+        default=list,
+        verbose_name="Ключевые слова",
+        help_text="Список ключевых слов для поиска"
+    )
+    
+    # AI settings
+    use_ai_filter = models.BooleanField(
+        default=False,
+        verbose_name="Использовать AI фильтр",
+        help_text="Дополнительная проверка сообщений через ИИ"
+    )
+    ai_prompt = models.TextField(
+        blank=True,
+        verbose_name="Промт для AI",
+        help_text="Инструкция для ИИ по фильтрации сообщений"
+    )
+    
+    # Status
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активна"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата обновления"
+    )
+    
+    class Meta:
+        verbose_name = "Группа ключевых слов"
+        verbose_name_plural = "Группы ключевых слов"
+        ordering = ['-created_at']
+        unique_together = ['user', 'name']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+    
+    @property
+    def keywords_count(self):
+        """Количество ключевых слов"""
+        return len(self.keywords) if self.keywords else 0
+    
+    def get_keywords_display(self):
+        """Строковое представление ключевых слов"""
+        if not self.keywords:
+            return "Нет ключевых слов"
+        return ", ".join(self.keywords[:5]) + ("..." if len(self.keywords) > 5 else "")
+
+
+class MonitoredChat(models.Model):
+    """Чаты для мониторинга"""
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Пользователь",
+        related_name="monitored_chats"
+    )
+    chat_id = models.BigIntegerField(
+        verbose_name="ID чата",
+        help_text="Telegram ID чата для мониторинга"
+    )
+    chat_name = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Название чата"
+    )
+    chat_username = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Username чата",
+        help_text="@username чата (если есть)"
+    )
+    invite_link = models.URLField(
+        blank=True,
+        verbose_name="Ссылка на чат"
+    )
+    
+    # Status
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активен"
+    )
+    added_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата добавления"
+    )
+    last_message_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Последнее сообщение"
+    )
+    
+    class Meta:
+        verbose_name = "Мониторимый чат"
+        verbose_name_plural = "Мониторимые чаты"
+        ordering = ['-added_at']
+        unique_together = ['user', 'chat_id']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.chat_name or self.chat_id}"
+
+
+class ProcessedMessage(models.Model):
+    """Обработанные сообщения"""
+    
+    # Relations
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Пользователь",
+        related_name="processed_messages"
+    )
+    keyword_group = models.ForeignKey(
+        KeywordGroup,
+        on_delete=models.CASCADE,
+        verbose_name="Группа ключевых слов",
+        related_name="processed_messages"
+    )
+    monitored_chat = models.ForeignKey(
+        MonitoredChat,
+        on_delete=models.CASCADE,
+        verbose_name="Мониторимый чат",
+        related_name="processed_messages"
+    )
+    
+    # Message data
+    message_id = models.BigIntegerField(
+        verbose_name="ID сообщения"
+    )
+    chat_id = models.BigIntegerField(
+        verbose_name="ID чата"
+    )
+    sender_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="ID отправителя"
+    )
+    sender_name = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Имя отправителя"
+    )
+    sender_username = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Username отправителя"
+    )
+    message_text = models.TextField(
+        verbose_name="Текст сообщения"
+    )
+    message_link = models.URLField(
+        blank=True,
+        verbose_name="Ссылка на сообщение"
+    )
+    
+    # Matching data
+    matched_keywords = models.JSONField(
+        default=list,
+        verbose_name="Найденные ключевые слова"
+    )
+    ai_result = models.TextField(
+        blank=True,
+        verbose_name="Результат AI проверки"
+    )
+    ai_score = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="AI Score",
+        help_text="Оценка релевантности от 0 до 1"
+    )
+    
+    # Status flags
+    notification_sent = models.BooleanField(
+        default=False,
+        verbose_name="Уведомление отправлено"
+    )
+    
+    # CRM status
+    CRM_STATUS_CHOICES = [
+        ('new', 'Новое'),
+        ('in_progress', 'В работе'),
+        ('completed', 'Завершено'),
+        ('rejected', 'Отклонено'),
+    ]
+    
+    crm_status = models.CharField(
+        max_length=20,
+        choices=CRM_STATUS_CHOICES,
+        default='new',
+        verbose_name="CRM Статус"
+    )
+    
+    is_processed = models.BooleanField(
+        default=False,
+        verbose_name="Обработано",
+        help_text="Пользователь просмотрел сообщение"
+    )
+    is_qualified = models.BooleanField(
+        default=False,
+        verbose_name="Квалифицированный лид",
+        help_text="Сообщение признано качественным лидом"
+    )
+    dialog_started = models.BooleanField(
+        default=False,
+        verbose_name="Диалог начат",
+        help_text="С пользователем начали диалог"
+    )
+    sale_made = models.BooleanField(
+        default=False,
+        verbose_name="Продажа совершена"
+    )
+    
+    # Additional info
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Заметки",
+        help_text="Дополнительные заметки пользователя"
+    )
+    
+    # Timestamps
+    processed_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата обработки"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата обновления"
+    )
+    
+    class Meta:
+        verbose_name = "Обработанное сообщение"
+        verbose_name_plural = "Обработанные сообщения"
+        ordering = ['-processed_at']
+        unique_together = ['user', 'message_id', 'chat_id']
+        indexes = [
+            models.Index(fields=['user', 'processed_at']),
+            models.Index(fields=['is_qualified', 'processed_at']),
+            models.Index(fields=['notification_sent']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - Message {self.message_id}"
+    
+    @property
+    def matched_keywords_display(self):
+        """Строковое представление найденных ключевых слов"""
+        if not self.matched_keywords:
+            return "Нет"
+        return ", ".join(self.matched_keywords)
+    
+    @property
+    def short_message_text(self):
+        """Сокращенный текст сообщения"""
+        if len(self.message_text) <= 100:
+            return self.message_text
+        return self.message_text[:100] + "..."
+
+
+class BotStatus(models.Model):
+    """Статус главного парсер-бота"""
+    
+    # Bot info
+    bot_username = models.CharField(
+        max_length=255,
+        default="master_parser",
+        verbose_name="Username бота"
+    )
+    
+    # Status
+    is_running = models.BooleanField(
+        default=False,
+        verbose_name="Запущен"
+    )
+    last_heartbeat = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Последний heartbeat"
+    )
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Время запуска"
+    )
+    
+    # Statistics
+    total_chats_monitored = models.IntegerField(
+        default=0,
+        verbose_name="Всего чатов мониторится"
+    )
+    total_users = models.IntegerField(
+        default=0,
+        verbose_name="Всего пользователей"
+    )
+    messages_processed_today = models.IntegerField(
+        default=0,
+        verbose_name="Сообщений обработано сегодня"
+    )
+    messages_processed_total = models.IntegerField(
+        default=0,
+        verbose_name="Всего сообщений обработано"
+    )
+    errors_count = models.IntegerField(
+        default=0,
+        verbose_name="Количество ошибок"
+    )
+    last_error = models.TextField(
+        blank=True,
+        verbose_name="Последняя ошибка"
+    )
+    last_error_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Время последней ошибки"
+    )
+    
+    class Meta:
+        verbose_name = "Статус бота"
+        verbose_name_plural = "Статус бота"
+    
+    def __str__(self):
+        status = "🟢 Работает" if self.is_running else "🔴 Остановлен"
+        return f"Master Parser - {status}"
+    
+    @property
+    def uptime(self):
+        """Время работы бота"""
+        if not self.started_at:
+            return "Не запущен"
+        
+        if not self.is_running:
+            return "Остановлен"
+        
+        uptime = timezone.now() - self.started_at
+        days = uptime.days
+        hours, remainder = divmod(uptime.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        
+        if days > 0:
+            return f"{days}д {hours}ч {minutes}м"
+        elif hours > 0:
+            return f"{hours}ч {minutes}м"
+        else:
+            return f"{minutes}м"
+    
+    @property
+    def is_healthy(self):
+        """Проверка здоровья бота (heartbeat не старше 5 минут)"""
+        if not self.is_running:
+            return False
+        
+        time_diff = timezone.now() - self.last_heartbeat
+        return time_diff.total_seconds() < 300  # 5 минут
+
+
+class RawMessage(models.Model):
+    """Все сырые сообщения, полученные парсером (для отладки)"""
+    
+    # Message metadata
+    message_id = models.BigIntegerField(verbose_name="ID сообщения")
+    chat_id = models.BigIntegerField(verbose_name="ID чата")
+    chat_name = models.CharField(max_length=500, blank=True, verbose_name="Название чата")
+    
+    # Sender info
+    sender_id = models.BigIntegerField(null=True, blank=True, verbose_name="ID отправителя")
+    sender_name = models.CharField(max_length=255, blank=True, verbose_name="Имя отправителя")
+    sender_username = models.CharField(max_length=255, blank=True, verbose_name="Username отправителя")
+    
+    # Message content
+    message_text = models.TextField(verbose_name="Текст сообщения")
+    message_date = models.DateTimeField(verbose_name="Дата сообщения")
+    is_channel_post = models.BooleanField(default=False, verbose_name="Пост канала")
+    
+    # Processing
+    received_at = models.DateTimeField(auto_now_add=True, verbose_name="Получено парсером")
+    
+    class Meta:
+        verbose_name = "Сырое сообщение"
+        verbose_name_plural = "Сырые сообщения"
+        ordering = ['-received_at']
+        indexes = [
+            models.Index(fields=['-received_at']),
+            models.Index(fields=['chat_id']),
+        ]
+    
+    def __str__(self):
+        return f"Message {self.message_id} from {self.chat_name} at {self.received_at}"

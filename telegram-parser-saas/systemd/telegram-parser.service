@@ -1,0 +1,20 @@
+[Unit]
+Description=Telegram Parser SaaS Gunicorn daemon
+After=network.target
+
+[Service]
+User=your-username
+Group=www-data
+WorkingDirectory=/path/to/telegram-parser-saas
+Environment="PATH=/path/to/telegram-parser-saas/venv/bin"
+Environment="DJANGO_SETTINGS_MODULE=config.settings_production"
+ExecStart=/path/to/telegram-parser-saas/venv/bin/gunicorn \
+          --workers 3 \
+          --bind unix:/path/to/telegram-parser-saas/gunicorn.sock \
+          --timeout 120 \
+          --access-logfile /var/log/telegram-parser/gunicorn-access.log \
+          --error-logfile /var/log/telegram-parser/gunicorn-error.log \
+          config.wsgi:application
+
+[Install]
+WantedBy=multi-user.target

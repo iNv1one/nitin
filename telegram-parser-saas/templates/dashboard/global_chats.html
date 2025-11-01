@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+
+{% block title %}Глобальные чаты - Telegram Parser{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-globe"></i> Глобальные чаты
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-success" onclick="toggleAllChats('enable')">
+                    <i class="fas fa-check-circle"></i> Включить все
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="toggleAllChats('disable')">
+                    <i class="fas fa-times-circle"></i> Выключить все
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Информационный блок -->
+    <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle"></i>
+        <strong>О глобальных чатах:</strong> Это общие чаты, которые парсятся единым ботом для всех пользователей системы.
+        Вы можете включить или выключить любой чат, и бот будет обрабатывать сообщения только из включенных вами чатов.
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Всего чатов</h5>
+                    <p class="card-text display-6">{{ total_chats }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h5 class="card-title text-success">Включено</h5>
+                    <p class="card-text display-6 text-success">{{ enabled_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">Выключено</h5>
+                    <p class="card-text display-6 text-danger">{{ disabled_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Поиск -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="get" class="input-group">
+                <input type="text" 
+                       class="form-control" 
+                       name="search" 
+                       placeholder="Поиск по названию чата..." 
+                       value="{{ search_query }}">
+                <button class="btn btn-primary" type="submit">
+                    <i class="fas fa-search"></i> Искать
+                </button>
+                {% if search_query %}
+                <a href="{% url 'dashboard:global_chats' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Сбросить
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Список чатов -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-list"></i> Список глобальных чатов
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">Статус</th>
+                            <th>Название чата</th>
+                            <th style="width: 150px;">ID чата</th>
+                            <th style="width: 150px;">Ссылка</th>
+                            <th style="width: 100px;">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in page_obj %}
+                        <tr id="chat-row-{{ item.chat.id }}">
+                            <td class="text-center">
+                                <span class="badge {% if item.is_enabled %}bg-success{% else %}bg-secondary{% endif %}" 
+                                      id="status-badge-{{ item.chat.id }}">
+                                    {% if item.is_enabled %}
+                                        <i class="fas fa-check"></i> ВКЛ
+                                    {% else %}
+                                        <i class="fas fa-times"></i> ВЫКЛ
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ item.chat.name }}</strong>
+                            </td>
+                            <td class="text-muted">
+                                <code>{{ item.chat.chat_id }}</code>
+                            </td>
+                            <td>
+                                {% if item.chat.invite_link %}
+                                    <a href="{{ item.chat.invite_link }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fab fa-telegram"></i> Открыть
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" 
+                                        class="btn btn-sm toggle-chat-btn {% if item.is_enabled %}btn-danger{% else %}btn-success{% endif %}"
+                                        data-chat-id="{{ item.chat.id }}"
+                                        id="toggle-btn-{{ item.chat.id }}">
+                                    {% if item.is_enabled %}
+                                        <i class="fas fa-toggle-off"></i> Выключить
+                                    {% else %}
+                                        <i class="fas fa-toggle-on"></i> Включить
+                                    {% endif %}
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                {% if search_query %}
+                                    <i class="fas fa-search"></i> По вашему запросу ничего не найдено
+                                {% else %}
+                                    <i class="fas fa-inbox"></i> Глобальные чаты не добавлены
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="page-item active">
+                <span class="page-link">
+                    Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<script>
+// Получаем CSRF токен
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// Event delegation для кнопок переключения чатов
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработчик для кнопок переключения отдельных чатов
+    document.querySelectorAll('.toggle-chat-btn').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const chatId = this.getAttribute('data-chat-id');
+            toggleChat(chatId);
+        });
+    });
+});
+
+// Переключение отдельного чата
+function toggleChat(chatId) {
+    const btn = document.getElementById(`toggle-btn-${chatId}`);
+    const badge = document.getElementById(`status-badge-${chatId}`);
+    
+    btn.disabled = true;
+    
+    fetch(`/dashboard/global-chats/${chatId}/toggle/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем UI
+            if (data.is_enabled) {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-danger');
+                btn.innerHTML = '<i class="fas fa-toggle-off"></i> Выключить';
+                badge.classList.remove('bg-secondary');
+                badge.classList.add('bg-success');
+                badge.innerHTML = '<i class="fas fa-check"></i> ВКЛ';
+            } else {
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-success');
+                btn.innerHTML = '<i class="fas fa-toggle-on"></i> Включить';
+                badge.classList.remove('bg-success');
+                badge.classList.add('bg-secondary');
+                badge.innerHTML = '<i class="fas fa-times"></i> ВЫКЛ';
+            }
+            
+            // Показываем уведомление
+            showToast(data.message, 'success');
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Произошла ошибка при переключении чата', 'error');
+    })
+    .finally(() => {
+        btn.disabled = false;
+    });
+}
+
+// Переключение всех чатов
+function toggleAllChats(action) {
+    if (!confirm(`Вы уверены, что хотите ${action === 'enable' ? 'включить' : 'выключить'} ВСЕ глобальные чаты?`)) {
+        return;
+    }
+    
+    fetch('/dashboard/global-chats/toggle-all/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `action=${action}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            // Перезагружаем страницу через 1 секунду
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Произошла ошибка при переключении чатов', 'error');
+    });
+}
+
+// Показ уведомлений
+function showToast(message, type) {
+    // Создаем toast элемент
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" 
+             role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" 
+                        data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    // Добавляем в контейнер
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = '11';
+        document.body.appendChild(container);
+    }
+    
+    container.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // Показываем toast
+    const toastElement = container.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Удаляем после скрытия
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+</script>
+{% endblock %}

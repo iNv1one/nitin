@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Отслеживаемые чаты - Telegram Parser SaaS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-comments"></i> Отслеживаемые чаты</h2>
+            <a href="{% url 'dashboard:add_monitored_chat' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Добавить чат
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            Использовано чатов: <strong>{{ page_obj.paginator.count }}</strong> из <strong>{{ user.get_chats_limit }}</strong>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Название чата</th>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Статус</th>
+                            <th>Добавлен</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for chat in page_obj %}
+                        <tr>
+                            <td><strong>{{ chat.chat_name|default:"Без названия" }}</strong></td>
+                            <td><code>{{ chat.chat_id }}</code></td>
+                            <td>{{ chat.chat_username|default:"—" }}</td>
+                            <td>
+                                {% if chat.is_active %}
+                                    <span class="badge bg-success">Активен</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Неактивен</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ chat.added_at|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <form method="post" action="{% url 'dashboard:toggle_chat_monitoring' chat.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-power-off"></i>
+                                        </button>
+                                    </form>
+                                    <form method="post" action="{% url 'dashboard:delete_monitored_chat' chat.id %}" onsubmit="return confirm('Удалить чат?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                У вас пока нет отслеживаемых чатов. Добавьте первый чат!
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+[Unit]
+Description=Telegram Parser Celery Worker
+After=network.target redis.service
+
+[Service]
+Type=forking
+User=your-username
+Group=www-data
+WorkingDirectory=/path/to/telegram-parser-saas
+Environment="PATH=/path/to/telegram-parser-saas/venv/bin"
+Environment="DJANGO_SETTINGS_MODULE=config.settings_production"
+ExecStart=/path/to/telegram-parser-saas/venv/bin/celery -A config worker \
+          --loglevel=info \
+          --logfile=/var/log/telegram-parser/celery.log \
+          --pidfile=/var/run/celery/telegram-parser-celery.pid
+
+[Install]
+WantedBy=multi-user.target

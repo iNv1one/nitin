@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Сырые сообщения - Отладка{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-bug"></i> Сырые сообщения парсера</h2>
+                <div>
+                    <span class="badge bg-primary">Всего: {{ total_count }}</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                        <i class="fas fa-sync-alt"></i> Обновить
+                    </button>
+                </div>
+            </div>
+            <p class="text-muted">Все сообщения, полученные парсером в реальном времени (независимо от ключевых слов)</p>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 140px;">Время</th>
+                                    <th style="width: 200px;">Чат</th>
+                                    <th style="width: 180px;">Отправитель</th>
+                                    <th>Сообщение</th>
+                                    <th style="width: 100px;">Тип</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for msg in messages %}
+                                <tr>
+                                    <td class="text-muted small">
+                                        <div>{{ msg.received_at|date:"d.m.Y" }}</div>
+                                        <div><strong>{{ msg.received_at|date:"H:i:s" }}</strong></div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ msg.chat_name|default:"Без названия" }}</div>
+                                        <div class="text-muted small">ID: {{ msg.chat_id }}</div>
+                                    </td>
+                                    <td>
+                                        <div>{{ msg.sender_name|default:"Неизвестно" }}</div>
+                                        {% if msg.sender_username %}
+                                        <div class="text-muted small">@{{ msg.sender_username }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="message-text">
+                                            {{ msg.message_text|truncatewords:30 }}
+                                        </div>
+                                        <div class="text-muted small mt-1">
+                                            Msg ID: {{ msg.message_id }} | 
+                                            {{ msg.message_date|date:"d.m.Y H:i" }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if msg.is_channel_post %}
+                                        <span class="badge bg-info">Канал</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Чат</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if messages.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if messages.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">Первая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ messages.previous_page_number }}">Предыдущая</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Страница {{ messages.number }} из {{ messages.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if messages.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ messages.next_page_number }}">Следующая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ messages.paginator.num_pages }}">Последняя</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <h4>Сообщений пока нет</h4>
+                <p>Как только парсер получит сообщения из Telegram, они появятся здесь.</p>
+                <p class="mb-0">
+                    <a href="{% url 'dashboard:parser_control' %}" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Перейти к управлению парсером
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .message-text {
+        max-width: 400px;
+        word-wrap: break-word;
+    }
+    
+    .table td {
+        vertical-align: middle;
+    }
+    
+    .card {
+        border-radius: 8px;
+    }
+</style>
+
+<script>
+    // Автообновление каждые 30 секунд
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

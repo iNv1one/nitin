@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Создать группу ключевых слов - Telegram Parser SaaS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <h2><i class="fas fa-plus-circle"></i> Создать группу ключевых слов</h2>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Название группы <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               placeholder="Например: Недвижимость Москва">
+                        <small class="form-text text-muted">Понятное название для идентификации группы</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="keywords" class="form-label">Ключевые слова <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="keywords" name="keywords" rows="5" required
+                                  placeholder="Введите ключевые слова через запятую или с новой строки&#10;Например:&#10;купить квартиру&#10;продажа недвижимости&#10;арендовать дом"></textarea>
+                        <small class="form-text text-muted">Разделяйте слова запятыми или переносом строки</small>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="use_ai_filter" name="use_ai_filter">
+                        <label class="form-check-label" for="use_ai_filter">
+                            <i class="fas fa-robot"></i> Использовать AI фильтр
+                        </label>
+                        <small class="form-text text-muted d-block">
+                            Дополнительная проверка сообщений через ИИ для повышения точности
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3" id="ai_prompt_container" style="display: none;">
+                        <label for="ai_prompt" class="form-label">Инструкция для AI</label>
+                        <textarea class="form-control" id="ai_prompt" name="ai_prompt" rows="4"
+                                  placeholder="Опишите, какие сообщения должен пропускать AI&#10;Например: Пропускай только сообщения о продаже квартир в Москве, игнорируй предложения о съёме"></textarea>
+                        <small class="form-text text-muted">Чем точнее инструкция, тем лучше результат</small>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                        <label class="form-check-label" for="is_active">
+                            Активировать сразу после создания
+                        </label>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Создать группу
+                        </button>
+                        <a href="{% url 'dashboard:keyword_groups' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('use_ai_filter').addEventListener('change', function() {
+    const aiPromptContainer = document.getElementById('ai_prompt_container');
+    if (this.checked) {
+        aiPromptContainer.style.display = 'block';
+    } else {
+        aiPromptContainer.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

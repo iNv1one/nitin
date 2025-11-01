@@ -1,0 +1,11 @@
+# Gunicorn для production
+gunicorn==21.2.0
+
+# PostgreSQL adapter
+psycopg2-binary==2.9.9
+
+# Nginx + uWSGI (альтернатива Gunicorn)
+# uwsgi==2.0.23
+
+# Production-ready WSGI server
+whitenoise==6.6.0

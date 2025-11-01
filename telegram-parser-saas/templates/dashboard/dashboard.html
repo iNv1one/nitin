@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Telegram Parser SaaS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Добро пожаловать, {{ user.get_full_name|default:user.username }}!</h1>
+        <p class="text-muted">Ваш тарифный план: <strong>{{ user.get_subscription_plan_display }}</strong></p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">{{ keyword_groups_count }}</h5>
+                        <p class="card-text text-muted">Групп ключевых слов</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tags fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">{{ monitored_chats_count }}</h5>
+                        <p class="card-text text-muted">Отслеживаемых чатов</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-comments fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">{{ recent_messages_count }}</h5>
+                        <p class="card-text text-muted">Сообщений за неделю</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-envelope fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">{{ messages_this_month }}/{{ message_limit }}</h5>
+                        <p class="card-text text-muted">Лимит сообщений</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-line fa-2x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h3>Быстрые действия</h3>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'dashboard:create_keyword_group' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Добавить группу ключевых слов
+            </a>
+            <a href="{% url 'dashboard:add_monitored_chat' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Добавить чат для мониторинга
+            </a>
+            <a href="{% url 'dashboard:processed_messages' %}" class="btn btn-info">
+                <i class="fas fa-eye"></i> Просмотреть сообщения
+            </a>
+            <a href="{% url 'dashboard:settings' %}" class="btn btn-secondary">
+                <i class="fas fa-cog"></i> Настройки
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tags"></i> Недавние группы ключевых слов</h5>
+            </div>
+            <div class="card-body">
+                {% if keyword_groups %}
+                    <div class="list-group list-group-flush">
+                        {% for group in keyword_groups %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ group.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ group.keywords|truncatechars:50 }}
+                                    </small>
+                                </div>
+                                <div>
+                                    {% if group.is_active %}
+                                        <span class="badge bg-success">Активна</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Неактивна</span>
+                                    {% endif %}
+                                    {% if group.use_ai_filter %}
+                                        <span class="badge bg-info">AI</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'dashboard:keyword_groups' %}" class="btn btn-outline-primary btn-sm">
+                            Все группы ключевых слов
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">Нет созданных групп ключевых слов</p>
+                    <div class="text-center">
+                        <a href="{% url 'dashboard:create_keyword_group' %}" class="btn btn-primary">
+                            Создать первую группу
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-comments"></i> Отслеживаемые чаты</h5>
+            </div>
+            <div class="card-body">
+                {% if monitored_chats %}
+                    <div class="list-group list-group-flush">
+                        {% for chat in monitored_chats %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ chat.chat_title|default:chat.chat_id }}</strong>
+                                    {% if chat.chat_username %}
+                                        <br>
+                                        <small class="text-muted">@{{ chat.chat_username }}</small>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if chat.is_active %}
+                                        <span class="badge bg-success">Активен</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Неактивен</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'dashboard:monitored_chats' %}" class="btn btn-outline-success btn-sm">
+                            Все отслеживаемые чаты
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">Нет отслеживаемых чатов</p>
+                    <div class="text-center">
+                        <a href="{% url 'dashboard:add_monitored_chat' %}" class="btn btn-success">
+                            Добавить первый чат
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_messages %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-envelope"></i> Последние сообщения</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Чат</th>
+                                <th>Сообщение</th>
+                                <th>Группа ключевых слов</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for message in recent_messages %}
+                                <tr class="message-row status-{{ message.crm_status }}">
+                                    <td>
+                                        <small>{{ message.processed_at|date:"d.m.Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ message.chat_title|default:message.chat_id }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ message.message_text|truncatechars:100 }}
+                                    </td>
+                                    <td>
+                                        {% if message.keyword_group %}
+                                            <span class="badge bg-primary">{{ message.keyword_group.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if message.crm_status == 'new' %}
+                                            <span class="badge bg-primary">Новое</span>
+                                        {% elif message.crm_status == 'in_progress' %}
+                                            <span class="badge bg-warning">В работе</span>
+                                        {% elif message.crm_status == 'completed' %}
+                                            <span class="badge bg-success">Завершено</span>
+                                        {% elif message.crm_status == 'rejected' %}
+                                            <span class="badge bg-danger">Отклонено</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center">
+                    <a href="{% url 'dashboard:processed_messages' %}" class="btn btn-outline-info">
+                        Все сообщения
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

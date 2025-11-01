@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактировать группу - Telegram Parser SaaS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <h2><i class="fas fa-edit"></i> Редактировать группу: {{ group.name }}</h2>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Название группы *</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ group.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="keywords" class="form-label">Ключевые слова *</label>
+                        <textarea class="form-control" id="keywords" name="keywords" rows="5" required>{% for kw in group.keywords %}{{ kw }}{% if not forloop.last %}, {% endif %}{% endfor %}</textarea>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="use_ai_filter" name="use_ai_filter" {% if group.use_ai_filter %}checked{% endif %}>
+                        <label class="form-check-label" for="use_ai_filter">Использовать AI фильтр</label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="ai_prompt" class="form-label">Инструкция для AI</label>
+                        <textarea class="form-control" id="ai_prompt" name="ai_prompt" rows="4">{{ group.ai_prompt }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if group.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">Активна</label>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button>
+                        <a href="{% url 'dashboard:keyword_groups' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

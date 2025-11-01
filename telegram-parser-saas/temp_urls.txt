@@ -1,0 +1,6 @@
+﻿    
+    # Управление парсером
+    path('parser/', views.parser_control, name='parser_control'),
+    path('parser/start/', views.start_parser, name='start_parser'),
+    path('parser/stop/', views.stop_parser, name='stop_parser'),
+    path('parser/status/', views.parser_status, name='parser_status'),

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавить чат - Telegram Parser SaaS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <h2><i class="fas fa-plus-circle"></i> Добавить чат для мониторинга</h2>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="chat_id" class="form-label">ID чата <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="chat_id" name="chat_id" required 
+                               placeholder="-1001234567890">
+                        <small class="form-text text-muted">
+                            Telegram ID чата (обычно начинается с -100)
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="chat_name" class="form-label">Название чата</label>
+                        <input type="text" class="form-control" id="chat_name" name="chat_name" 
+                               placeholder="Название чата для удобства">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="chat_username" class="form-label">Username чата</label>
+                        <input type="text" class="form-control" id="chat_username" name="chat_username" 
+                               placeholder="@channel_username">
+                        <small class="form-text text-muted">Если чат имеет публичный username</small>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Как получить ID чата?</h6>
+                        <ol class="mb-0">
+                            <li>Перешлите любое сообщение из чата боту @getidsbot</li>
+                            <li>Бот ответит с ID чата</li>
+                            <li>Скопируйте ID и вставьте в форму выше</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Добавить чат
+                        </button>
+                        <a href="{% url 'dashboard:monitored_chats' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
