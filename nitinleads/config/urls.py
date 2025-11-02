@@ -19,6 +19,6 @@ urlpatterns = [
 ]
 
 # Admin site customization
-admin.site.site_header = "NITN"
-admin.site.site_title = "NITN Admin"
-admin.site.index_title = "Добро пожаловать в NITN"
+admin.site.site_header = "NITIN"
+admin.site.site_title = "NITIN Admin"
+admin.site.index_title = "Добро пожаловать в NITIN"
