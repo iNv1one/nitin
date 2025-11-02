@@ -166,7 +166,7 @@ class MessageProcessor:
             
             # Отправляем запрос к Grok
             response = client.chat.completions.create(
-                model="grok-beta",  # Grok модель
+                model="grok-3-mini",  # Grok модель
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Проверь это сообщение:\n\n{text}"}
