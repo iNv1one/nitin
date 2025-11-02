@@ -255,18 +255,23 @@ class MessageProcessor:
             # Форматируем сообщение
             notification_text = self._format_notification(processed_msg, user_data)
             
+            # Создаем inline клавиатуру с кнопками статусов
+            keyboard = self._create_status_keyboard(processed_msg)
+            
             # Отправляем уведомление
             try:
-                bot.send_message(
+                sent_message = bot.send_message(
                     chat_id=chat_id,
                     text=notification_text,
                     parse_mode='HTML',
-                    disable_web_page_preview=True
+                    disable_web_page_preview=True,
+                    reply_markup=keyboard
                 )
                 
-                # Отмечаем что уведомление отправлено
+                # Сохраняем ID сообщения для последующего редактирования кнопок
                 processed_msg.notification_sent = True
-                processed_msg.save(update_fields=['notification_sent'])
+                processed_msg.telegram_message_id = sent_message.message_id
+                processed_msg.save(update_fields=['notification_sent', 'telegram_message_id'])
                 
                 logger.info(f"Notification sent to user {user_data['user__id']} for message {processed_msg.message_id}")
                 return True
@@ -278,6 +283,59 @@ class MessageProcessor:
         except Exception as e:
             logger.error(f"Error in send_notification: {e}")
             return False
+    
+    def _create_status_keyboard(self, processed_msg: ProcessedMessage):
+        """Создаем inline клавиатуру со статусами"""
+        from telebot import types
+        
+        markup = types.InlineKeyboardMarkup(row_width=3)
+        
+        # Первая строка: Неквал, Квал, Спам
+        buttons_row1 = []
+        
+        # Неквал
+        unq_text = "✅ Неквал" if processed_msg.quality_status == 'unqualified' else "Неквал"
+        buttons_row1.append(types.InlineKeyboardButton(
+            unq_text, 
+            callback_data=f"status_{processed_msg.id}_unqualified"
+        ))
+        
+        # Квал
+        qual_text = "✅ Квал" if processed_msg.quality_status == 'qualified' else "Квал"
+        buttons_row1.append(types.InlineKeyboardButton(
+            qual_text,
+            callback_data=f"status_{processed_msg.id}_qualified"
+        ))
+        
+        # Спам
+        spam_text = "✅ Спам" if processed_msg.quality_status == 'spam' else "Спам"
+        buttons_row1.append(types.InlineKeyboardButton(
+            spam_text,
+            callback_data=f"status_{processed_msg.id}_spam"
+        ))
+        
+        markup.row(*buttons_row1)
+        
+        # Вторая строка: Начали диалог, Есть продажа
+        buttons_row2 = []
+        
+        # Начали диалог
+        dialog_text = "✅ Начали диалог" if processed_msg.dialog_started else "Начали диалог"
+        buttons_row2.append(types.InlineKeyboardButton(
+            dialog_text,
+            callback_data=f"status_{processed_msg.id}_dialog"
+        ))
+        
+        # Есть продажа
+        sale_text = "✅ Есть продажа" if processed_msg.sale_made else "Есть продажа"
+        buttons_row2.append(types.InlineKeyboardButton(
+            sale_text,
+            callback_data=f"status_{processed_msg.id}_sale"
+        ))
+        
+        markup.row(*buttons_row2)
+        
+        return markup
     
     def _get_user_bot(self, user_id: int, bot_token: str):
         """Получаем бот для пользователя (с кэшированием)"""
@@ -307,9 +365,21 @@ class MessageProcessor:
             
             sender_name = escape_html(processed_msg.sender_name)
             sender_username = escape_html(processed_msg.sender_username)
-            chat_name = escape_html(user_data.get('chat_name', 'Unknown Chat'))
             message_text = escape_html(processed_msg.message_text)
             keywords = escape_html(", ".join(processed_msg.matched_keywords))
+            
+            # Получаем название чата из GlobalChat
+            if processed_msg.global_chat:
+                chat_name = escape_html(processed_msg.global_chat.name)
+                chat_link = processed_msg.global_chat.invite_link
+                
+                # Форматируем канал с учетом ссылки
+                if chat_link:
+                    channel_info = f'<a href="{chat_link}">{chat_name}</a>'
+                else:
+                    channel_info = f'{chat_name} (Приватный)'
+            else:
+                channel_info = 'Unknown Chat'
             
             # Ограничиваем длину текста сообщения
             if len(message_text) > 300:
@@ -323,8 +393,8 @@ class MessageProcessor:
                 notification += f"\n🔍 <b>Username:</b> @{sender_username}"
             
             notification += f"""
-📢 <b>Канал:</b> {chat_name}
-🔗 <b>Ссылка:</b> {processed_msg.message_link or 'Недоступна'}
+📢 <b>Канал:</b> {channel_info}
+🔗 <b>Ссылка на сообщение:</b> {processed_msg.message_link or 'Недоступна'}
 🎯 <b>Ключевые слова:</b> {keywords}
 
 💬 <b>Сообщение:</b>

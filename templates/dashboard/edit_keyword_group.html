@@ -19,7 +19,8 @@
                     
                     <div class="mb-3">
                         <label for="keywords" class="form-label">Ключевые слова *</label>
-                        <textarea class="form-control" id="keywords" name="keywords" rows="5" required>{% for kw in group.keywords %}{{ kw }}{% if not forloop.last %}, {% endif %}{% endfor %}</textarea>
+                        <textarea class="form-control" id="keywords" name="keywords" rows="5" required>{{ group.keywords|join:", " }}</textarea>
+                        <small class="form-text text-muted">Разделяйте ключевые слова запятыми или с новой строки</small>
                     </div>
                     
                     <div class="mb-3 form-check">

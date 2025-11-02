@@ -274,36 +274,32 @@ class ProcessedMessage(models.Model):
         default=False,
         verbose_name="Уведомление отправлено"
     )
+    telegram_message_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name="ID сообщения в Telegram",
+        help_text="ID уведомления в Telegram для редактирования кнопок"
+    )
     
-    # CRM status
-    CRM_STATUS_CHOICES = [
-        ('new', 'Новое'),
-        ('in_progress', 'В работе'),
-        ('completed', 'Завершено'),
-        ('rejected', 'Отклонено'),
+    # Lead quality statuses (взаимоисключающие)
+    QUALITY_STATUS_CHOICES = [
+        ('none', 'Не оценено'),
+        ('unqualified', 'Неквал'),
+        ('qualified', 'Квал'),
+        ('spam', 'Спам'),
     ]
     
-    crm_status = models.CharField(
+    quality_status = models.CharField(
         max_length=20,
-        choices=CRM_STATUS_CHOICES,
-        default='new',
-        verbose_name="CRM Статус"
+        choices=QUALITY_STATUS_CHOICES,
+        default='none',
+        verbose_name="Качество лида"
     )
     
-    is_processed = models.BooleanField(
-        default=False,
-        verbose_name="Обработано",
-        help_text="Пользователь просмотрел сообщение"
-    )
-    is_qualified = models.BooleanField(
-        default=False,
-        verbose_name="Квалифицированный лид",
-        help_text="Сообщение признано качественным лидом"
-    )
+    # Progress statuses (дополнительные флаги)
     dialog_started = models.BooleanField(
         default=False,
-        verbose_name="Диалог начат",
-        help_text="С пользователем начали диалог"
+        verbose_name="Диалог начат"
     )
     sale_made = models.BooleanField(
         default=False,

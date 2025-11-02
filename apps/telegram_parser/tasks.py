@@ -194,3 +194,59 @@ def health_check():
     except Exception as exc:
         logger.error(f"Error in health check: {exc}")
         raise exc
+
+
+@shared_task
+def start_user_bots_polling():
+    """
+    Задача для запуска polling для ботов всех пользователей
+    """
+    try:
+        from apps.users.models import User
+        from .bot_handlers import setup_bot_handlers
+        import telebot
+        import threading
+        
+        logger.info("Starting user bots polling...")
+        
+        # Получаем всех активных пользователей с bot_token
+        users = User.objects.filter(is_active=True).exclude(bot_token__isnull=True).exclude(bot_token='')
+        
+        if not users.exists():
+            logger.warning("No users with bot tokens found")
+            return "No users with bot tokens"
+        
+        # Запускаем polling для каждого бота
+        for user in users:
+            try:
+                logger.info(f"Starting bot polling for user {user.username} (ID: {user.id})")
+                
+                # Создаем экземпляр бота
+                bot = telebot.TeleBot(user.bot_token, parse_mode='HTML')
+                
+                # Настраиваем обработчики
+                setup_bot_handlers(bot, user)
+                
+                # Запускаем polling в отдельном потоке
+                def polling_thread(bot_instance, user_obj):
+                    try:
+                        logger.info(f"Starting polling thread for user {user_obj.username}")
+                        bot_instance.infinity_polling(timeout=10, long_polling_timeout=5)
+                    except Exception as e:
+                        logger.error(f"Error in polling thread for user {user_obj.username}: {e}")
+                
+                thread = threading.Thread(target=polling_thread, args=(bot, user), daemon=True)
+                thread.start()
+                
+                logger.info(f"✅ Started bot polling for user {user.username}")
+                
+            except Exception as e:
+                logger.error(f"❌ Error starting bot for user {user.username}: {e}")
+                continue
+        
+        logger.info(f"Successfully started polling for {users.count()} user bots")
+        return f"Started polling for {users.count()} bots"
+        
+    except Exception as exc:
+        logger.error(f"Error in start_user_bots_polling: {exc}")
+        raise exc

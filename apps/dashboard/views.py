@@ -122,11 +122,23 @@ def edit_keyword_group(request, group_id):
     group = get_object_or_404(KeywordGroup, id=group_id, user=request.user)
     
     if request.method == 'POST':
-        group.name = request.POST.get('name', group.name)
-        group.keywords = request.POST.get('keywords', group.keywords)
-        group.ai_prompt = request.POST.get('ai_prompt', group.ai_prompt)
-        group.use_ai_filter = request.POST.get('use_ai_filter') == 'on'
-        group.is_active = request.POST.get('is_active') == 'on'
+        name = request.POST.get('name', group.name)
+        keywords = request.POST.get('keywords', '')
+        ai_prompt = request.POST.get('ai_prompt', group.ai_prompt)
+        use_ai_filter = request.POST.get('use_ai_filter') == 'on'
+        is_active = request.POST.get('is_active') == 'on'
+        
+        # Парсим ключевые слова так же как при создании
+        if keywords:
+            keywords_list = [kw.strip() for kw in keywords.replace('\n', ',').split(',') if kw.strip()]
+        else:
+            keywords_list = group.keywords
+        
+        group.name = name
+        group.keywords = keywords_list
+        group.ai_prompt = ai_prompt
+        group.use_ai_filter = use_ai_filter
+        group.is_active = is_active
         
         group.save()
         
