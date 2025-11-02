@@ -133,6 +133,10 @@
                        href="{% url 'dashboard:processed_messages' %}">
                         <i class="fas fa-envelope"></i> Сообщения
                     </a>
+                    <a class="nav-link {% if 'statistics' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'dashboard:statistics' %}">
+                        <i class="fas fa-chart-bar"></i> Статистика
+                    </a>
                     
                     {% if user.is_staff %}
                     <hr class="sidebar-divider">

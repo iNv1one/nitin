@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block title %}Статистика - Telegram Parser{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>📊 Статистика</h2>
+            <p class="text-muted">{{ period_name }}</p>
+        </div>
+    </div>
+
+    <!-- Фильтр по периодам -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="btn-group" role="group">
+                <a href="?period=day" class="btn {% if period == 'day' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    День
+                </a>
+                <a href="?period=week" class="btn {% if period == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Неделя
+                </a>
+                <a href="?period=month" class="btn {% if period == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Месяц
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Общая статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Всего сообщений</h5>
+                    <h2 class="mb-0">{{ total_messages }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">✅ Одобрено AI</h5>
+                    <h2 class="mb-0">{{ ai_approved }}</h2>
+                    {% if total_messages > 0 %}
+                    <small>{{ ai_approved|floatformat:0 }} из {{ total_messages }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">❌ Отклонено AI</h5>
+                    <h2 class="mb-0">{{ ai_rejected }}</h2>
+                    {% if total_messages > 0 %}
+                    <small>{{ ai_rejected|floatformat:0 }} из {{ total_messages }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">💰 Продажи</h5>
+                    <h2 class="mb-0">{{ sale_made }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика по статусам -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Статистика по статусам качества</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-secondary">Без статуса</span></td>
+                                <td class="text-end"><strong>{{ status_stats.none }}</strong></td>
+                                <td class="text-end">
+                                    {% if total_messages > 0 %}
+                                    {{ status_stats.none|floatformat:0 }}%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-danger">❌ Неквал</span></td>
+                                <td class="text-end"><strong>{{ status_stats.unqualified }}</strong></td>
+                                <td class="text-end">
+                                    {% if total_messages > 0 %}
+                                    {% widthratio status_stats.unqualified total_messages 100 %}%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-success">✅ Квал</span></td>
+                                <td class="text-end"><strong>{{ status_stats.qualified }}</strong></td>
+                                <td class="text-end">
+                                    {% if total_messages > 0 %}
+                                    {% widthratio status_stats.qualified total_messages 100 %}%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark">🚫 Спам</span></td>
+                                <td class="text-end"><strong>{{ status_stats.spam }}</strong></td>
+                                <td class="text-end">
+                                    {% if total_messages > 0 %}
+                                    {% widthratio status_stats.spam total_messages 100 %}%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="table-primary">
+                                <td><span class="badge bg-info">💬 Диалог начат</span></td>
+                                <td class="text-end"><strong>{{ dialog_started }}</strong></td>
+                                <td class="text-end">
+                                    {% if total_messages > 0 %}
+                                    {% widthratio dialog_started total_messages 100 %}%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="table-success">
+                                <td><span class="badge bg-primary">💰 Продажа</span></td>
+                                <td class="text-end"><strong>{{ sale_made }}</strong></td>
+                                <td class="text-end">
+                                    {% if total_messages > 0 %}
+                                    {% widthratio sale_made total_messages 100 %}%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Топ-10 групп ключевых слов</h5>
+                </div>
+                <div class="card-body">
+                    {% if keyword_group_stats %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Группа</th>
+                                <th class="text-end">Сообщений</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in keyword_group_stats %}
+                            <tr>
+                                <td>{{ stat.keyword_group__name }}</td>
+                                <td class="text-end"><strong>{{ stat.count }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted">Нет данных за выбранный период</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- График по дням -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 Динамика сообщений</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="messagesChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('messagesChart').getContext('2d');
+    
+    const dailyStats = JSON.parse('{{ daily_stats_json|escapejs }}');
+    const labels = dailyStats.map(stat => stat.date);
+    const data = dailyStats.map(stat => stat.count);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Количество сообщений',
+                data: data,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

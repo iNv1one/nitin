@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import timedelta
+import json
 
 from apps.telegram_parser.models import KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus, GlobalChat, UserChatSettings, RawMessage
 from apps.users.models import User
@@ -726,3 +727,92 @@ def raw_messages(request):
     }
     
     return render(request, 'dashboard/raw_messages.html', context)
+
+
+@login_required
+def statistics(request):
+    """Страница статистики"""
+    user = request.user
+    
+    # Получаем период из GET параметров (по умолчанию - неделя)
+    period = request.GET.get('period', 'week')
+    
+    # Определяем временные рамки
+    now = timezone.now()
+    if period == 'day':
+        start_date = now - timedelta(days=1)
+        period_name = 'За последний день'
+    elif period == 'week':
+        start_date = now - timedelta(days=7)
+        period_name = 'За последнюю неделю'
+    elif period == 'month':
+        start_date = now - timedelta(days=30)
+        period_name = 'За последний месяц'
+    else:
+        start_date = now - timedelta(days=7)
+        period_name = 'За последнюю неделю'
+    
+    # Получаем все сообщения пользователя за период
+    messages = ProcessedMessage.objects.filter(
+        user=user,
+        processed_at__gte=start_date
+    )
+    
+    # Общая статистика
+    total_messages = messages.count()
+    
+    # Статистика по AI фильтру
+    ai_approved = messages.exclude(ai_result='').exclude(ai_result__icontains='error').filter(
+        Q(ai_result__icontains='YES') | Q(ai_result__icontains='Y')
+    ).count()
+    
+    ai_rejected_count = messages.exclude(ai_result='').exclude(ai_result__icontains='error').count() - ai_approved
+    
+    # Статистика по статусам quality_status
+    status_stats = {
+        'none': messages.filter(quality_status='none').count(),
+        'unqualified': messages.filter(quality_status='unqualified').count(),
+        'qualified': messages.filter(quality_status='qualified').count(),
+        'spam': messages.filter(quality_status='spam').count(),
+    }
+    
+    # Статистика по дополнительным флагам
+    dialog_started = messages.filter(dialog_started=True).count()
+    sale_made = messages.filter(sale_made=True).count()
+    
+    # Статистика по группам ключевых слов
+    keyword_group_stats = messages.values('keyword_group__name').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    # Статистика по дням (для графика)
+    daily_stats = []
+    for i in range(7 if period == 'week' else (1 if period == 'day' else 30)):
+        day_start = now - timedelta(days=i)
+        day_end = day_start - timedelta(days=1)
+        
+        day_messages = messages.filter(
+            processed_at__gte=day_end,
+            processed_at__lt=day_start
+        ).count()
+        
+        daily_stats.insert(0, {
+            'date': day_start.strftime('%d.%m'),
+            'count': day_messages
+        })
+    
+    context = {
+        'period': period,
+        'period_name': period_name,
+        'total_messages': total_messages,
+        'ai_approved': ai_approved,
+        'ai_rejected': ai_rejected_count,
+        'status_stats': status_stats,
+        'dialog_started': dialog_started,
+        'sale_made': sale_made,
+        'keyword_group_stats': keyword_group_stats,
+        'daily_stats': daily_stats,
+        'daily_stats_json': json.dumps(daily_stats),  # Для JavaScript
+    }
+    
+    return render(request, 'dashboard/statistics.html', context)

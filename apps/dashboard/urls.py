@@ -39,6 +39,9 @@ urlpatterns = [
     
     # Сырые сообщения (отладка)
     path('raw-messages/', views.raw_messages, name='raw_messages'),
+    
+    # Статистика
+    path('statistics/', views.statistics, name='statistics'),
 
     
     # API endpoints
