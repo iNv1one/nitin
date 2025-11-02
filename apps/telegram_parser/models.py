@@ -330,7 +330,7 @@ class ProcessedMessage(models.Model):
         unique_together = ['user', 'message_id', 'chat_id']
         indexes = [
             models.Index(fields=['user', 'processed_at']),
-            models.Index(fields=['status']),
+            models.Index(fields=['quality_status']),
             models.Index(fields=['notification_sent']),
         ]
     
