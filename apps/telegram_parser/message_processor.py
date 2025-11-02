@@ -216,10 +216,6 @@ class MessageProcessor:
                     notification_sent=False
                 )
                 
-                # Обновляем время последнего сообщения в глобальном чате
-                global_chat.last_message_at = timezone.now()
-                global_chat.save(update_fields=['last_message_at'])
-                
                 logger.info(f"Saved processed message {message_id} for user {user_data['user__id']}")
                 return processed_msg
                 
