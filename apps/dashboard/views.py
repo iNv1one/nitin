@@ -289,9 +289,16 @@ def processed_messages(request):
     status_filter = request.GET.get('status')
     keyword_filter = request.GET.get('keyword')
     date_filter = request.GET.get('date')
+    progress_filter = request.GET.get('progress')
     
     if status_filter:
         messages_qs = messages_qs.filter(quality_status=status_filter)
+    
+    if progress_filter:
+        if progress_filter == 'dialog':
+            messages_qs = messages_qs.filter(dialog_started=True)
+        elif progress_filter == 'sale':
+            messages_qs = messages_qs.filter(sale_made=True)
     
     if keyword_filter:
         messages_qs = messages_qs.filter(keyword_group__name__icontains=keyword_filter)

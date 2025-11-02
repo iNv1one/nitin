@@ -15,17 +15,25 @@
         <div class="card">
             <div class="card-body">
                 <form method="get" class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Статус</label>
+                    <div class="col-md-3">
+                        <label class="form-label">Качество</label>
                         <select name="status" class="form-select">
                             <option value="">Все</option>
-                            <option value="new" {% if status_filter == 'new' %}selected{% endif %}>Новые</option>
-                            <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>В работе</option>
-                            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Завершено</option>
-                            <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Отклонено</option>
+                            <option value="none" {% if status_filter == 'none' %}selected{% endif %}>⚪ Неотработанные</option>
+                            <option value="qualified" {% if status_filter == 'qualified' %}selected{% endif %}>⭐ Квал</option>
+                            <option value="unqualified" {% if status_filter == 'unqualified' %}selected{% endif %}>❌ Неквал</option>
+                            <option value="spam" {% if status_filter == 'spam' %}selected{% endif %}>🚫 Спам</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label class="form-label">Диалог/Продажа</label>
+                        <select name="progress" class="form-select">
+                            <option value="">Все</option>
+                            <option value="dialog" {% if request.GET.progress == 'dialog' %}selected{% endif %}>💬 Диалог начат</option>
+                            <option value="sale" {% if request.GET.progress == 'sale' %}selected{% endif %}>💰 Есть продажа</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label">Период</label>
                         <select name="date" class="form-select">
                             <option value="">Все время</option>
@@ -34,7 +42,7 @@
                             <option value="month" {% if date_filter == 'month' %}selected{% endif %}>Месяц</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">&nbsp;</label>
                         <button type="submit" class="btn btn-primary d-block w-100">
                             <i class="fas fa-filter"></i> Применить фильтры
@@ -51,7 +59,7 @@
     <div class="col-12">
         {% if page_obj %}
             {% for message in page_obj %}
-            <div class="card mb-3 message-row status-{{ message.crm_status }}">
+            <div class="card mb-3 message-row status-{{ message.quality_status }}">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-8">
@@ -66,15 +74,26 @@
                             </small>
                         </div>
                         <div class="col-md-4">
-                            <form method="post" action="{% url 'dashboard:update_message_status' message.id %}">
-                                {% csrf_token %}
-                                <select name="status" class="form-select mb-2" onchange="this.form.submit()">
-                                    <option value="new" {% if message.crm_status == 'new' %}selected{% endif %}>🆕 Новое</option>
-                                    <option value="in_progress" {% if message.crm_status == 'in_progress' %}selected{% endif %}>⏳ В работе</option>
-                                    <option value="completed" {% if message.crm_status == 'completed' %}selected{% endif %}>✅ Завершено</option>
-                                    <option value="rejected" {% if message.crm_status == 'rejected' %}selected{% endif %}>❌ Отклонено</option>
-                                </select>
-                            </form>
+                            <div class="mb-2">
+                                <strong>Статус:</strong>
+                                <div class="btn-group d-flex mb-2" role="group">
+                                    {% if message.quality_status == 'qualified' %}
+                                        <span class="badge bg-success w-100">⭐ Квал</span>
+                                    {% elif message.quality_status == 'unqualified' %}
+                                        <span class="badge bg-danger w-100">❌ Неквал</span>
+                                    {% elif message.quality_status == 'spam' %}
+                                        <span class="badge bg-dark w-100">🚫 Спам</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary w-100">⚪ Новое</span>
+                                    {% endif %}
+                                </div>
+                                {% if message.dialog_started %}
+                                    <span class="badge bg-info w-100 mb-1">💬 Начали диалог</span>
+                                {% endif %}
+                                {% if message.sale_made %}
+                                    <span class="badge bg-warning text-dark w-100 mb-1">💰 Есть продажа</span>
+                                {% endif %}
+                            </div>
                             {% if message.message_link %}
                             <a href="{{ message.message_link }}" target="_blank" class="btn btn-sm btn-outline-primary w-100">
                                 <i class="fas fa-external-link-alt"></i> Открыть в Telegram
