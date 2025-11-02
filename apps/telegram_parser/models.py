@@ -206,10 +206,20 @@ class ProcessedMessage(models.Model):
         verbose_name="Группа ключевых слов",
         related_name="processed_messages"
     )
+    global_chat = models.ForeignKey(
+        GlobalChat,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name="Глобальный чат",
+        related_name="processed_messages"
+    )
     monitored_chat = models.ForeignKey(
         MonitoredChat,
         on_delete=models.CASCADE,
-        verbose_name="Мониторимый чат",
+        null=True,
+        blank=True,
+        verbose_name="Мониторимый чат (устарело)",
         related_name="processed_messages"
     )
     

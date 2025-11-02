@@ -198,12 +198,12 @@ class MessageProcessor:
                     chat_id_clean = str(chat_id)[4:]  # Убираем -100
                     message_link = f"https://t.me/c/{chat_id_clean}/{message_id}"
                 
-                # Создаем запись (пока используем global_chat вместо monitored_chat)
-                # TODO: Возможно нужно будет обновить модель ProcessedMessage
+                # Создаем запись с global_chat
                 processed_msg = ProcessedMessage.objects.create(
                     user_id=user_data['user__id'],
                     keyword_group=keyword_group,
-                    monitored_chat_id=None,  # Временно, пока не обновим модель
+                    global_chat=global_chat,
+                    monitored_chat_id=None,  # Устаревшее поле, оставляем None
                     message_id=message_id,
                     chat_id=chat_id,
                     sender_id=message_data.get('sender_id'),
