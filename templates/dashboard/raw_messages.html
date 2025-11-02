@@ -20,7 +20,7 @@
         </div>
     </div>
 
-    {% if messages %}
+    {% if raw_messages %}
     <div class="row">
         <div class="col-md-12">
             <div class="card shadow-sm">
@@ -37,7 +37,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for msg in messages %}
+                                {% for msg in raw_messages %}
                                 <tr>
                                     <td class="text-muted small">
                                         <div>{{ msg.received_at|date:"d.m.Y" }}</div>
@@ -78,30 +78,30 @@
             </div>
 
             <!-- Pagination -->
-            {% if messages.has_other_pages %}
+            {% if raw_messages.has_other_pages %}
             <nav aria-label="Page navigation" class="mt-4">
                 <ul class="pagination justify-content-center">
-                    {% if messages.has_previous %}
+                    {% if raw_messages.has_previous %}
                     <li class="page-item">
                         <a class="page-link" href="?page=1">Первая</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ messages.previous_page_number }}">Предыдущая</a>
+                        <a class="page-link" href="?page={{ raw_messages.previous_page_number }}">Предыдущая</a>
                     </li>
                     {% endif %}
 
                     <li class="page-item active">
                         <span class="page-link">
-                            Страница {{ messages.number }} из {{ messages.paginator.num_pages }}
+                            Страница {{ raw_messages.number }} из {{ raw_messages.paginator.num_pages }}
                         </span>
                     </li>
 
-                    {% if messages.has_next %}
+                    {% if raw_messages.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ messages.next_page_number }}">Следующая</a>
+                        <a class="page-link" href="?page={{ raw_messages.next_page_number }}">Следующая</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ messages.paginator.num_pages }}">Последняя</a>
+                        <a class="page-link" href="?page={{ raw_messages.paginator.num_pages }}">Последняя</a>
                     </li>
                     {% endif %}
                 </ul>

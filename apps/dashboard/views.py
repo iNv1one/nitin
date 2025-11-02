@@ -590,7 +590,7 @@ def raw_messages(request):
     messages_page = paginator.get_page(page_number)
     
     context = {
-        'messages': messages_page,
+        'raw_messages': messages_page,  # Переименовали с 'messages' на 'raw_messages'
         'total_count': messages_list.count(),
     }
     
