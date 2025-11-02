@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.db.models import Count, Q
 from .models import (
     KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,
-    GlobalChat, UserChatSettings
+    GlobalChat, UserChatSettings, ChatRequest
 )
 
 
@@ -345,6 +345,86 @@ class UserChatSettingsAdmin(admin.ModelAdmin):
             return format_html('<span style="color: green;">✅ Включен</span>')
         return format_html('<span style="color: red;">❌ Выключен</span>')
     is_enabled_display.short_description = 'Статус'
+
+
+@admin.register(ChatRequest)
+class ChatRequestAdmin(admin.ModelAdmin):
+    """Админка для заявок на добавление чатов"""
+    
+    list_display = [
+        'id', 'user', 'chat_link_short', 'status_display', 
+        'created_at', 'processed_at'
+    ]
+    list_filter = ['status', 'created_at', 'processed_at']
+    search_fields = ['user__username', 'user__email', 'chat_link', 'chat_description']
+    list_select_related = ['user', 'global_chat']
+    readonly_fields = ['created_at', 'processed_at']
+    
+    fieldsets = (
+        ('Информация о заявке', {
+            'fields': ('user', 'chat_link', 'chat_description')
+        }),
+        ('Обработка', {
+            'fields': ('status', 'admin_comment', 'global_chat', 'processed_at')
+        }),
+        ('Метаданные', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['approve_requests', 'reject_requests']
+    
+    def chat_link_short(self, obj):
+        """Сокращенная ссылка на чат"""
+        if len(obj.chat_link) > 50:
+            return obj.chat_link[:50] + "..."
+        return obj.chat_link
+    chat_link_short.short_description = 'Ссылка на чат'
+    
+    def status_display(self, obj):
+        """Цветное отображение статуса"""
+        colors = {
+            'pending': 'orange',
+            'approved': 'green',
+            'rejected': 'red'
+        }
+        icons = {
+            'pending': '⏳',
+            'approved': '✅',
+            'rejected': '❌'
+        }
+        color = colors.get(obj.status, 'gray')
+        icon = icons.get(obj.status, '❓')
+        return format_html(
+            '<span style="color: {};">{} {}</span>',
+            color, icon, obj.get_status_display()
+        )
+    status_display.short_description = 'Статус'
+    
+    def approve_requests(self, request, queryset):
+        """Одобрить заявки"""
+        from django.utils import timezone
+        updated = 0
+        for req in queryset.filter(status='pending'):
+            req.status = 'approved'
+            req.processed_at = timezone.now()
+            req.save()
+            updated += 1
+        self.message_user(request, f"Одобрено заявок: {updated}")
+    approve_requests.short_description = "✅ Одобрить выбранные заявки"
+    
+    def reject_requests(self, request, queryset):
+        """Отклонить заявки"""
+        from django.utils import timezone
+        updated = 0
+        for req in queryset.filter(status='pending'):
+            req.status = 'rejected'
+            req.processed_at = timezone.now()
+            req.save()
+            updated += 1
+        self.message_user(request, f"Отклонено заявок: {updated}")
+    reject_requests.short_description = "❌ Отклонить выбранные заявки"
 
 
 # Настройка админки

@@ -208,40 +208,49 @@ def monitored_chats(request):
 @require_http_methods(["GET", "POST"])
 def add_monitored_chat(request):
     """
-    Добавление нового отслеживаемого чата
+    Создание заявки на добавление нового чата
     """
     if request.method == 'POST':
-        chat_id = request.POST.get('chat_id')
-        chat_name = request.POST.get('chat_name', '')
-        chat_username = request.POST.get('chat_username', '')
+        chat_link = request.POST.get('chat_link', '').strip()
+        chat_description = request.POST.get('chat_description', '').strip()
         
-        if not chat_id:
-            messages.error(request, 'ID чата обязательно для заполнения.')
+        if not chat_link:
+            messages.error(request, 'Ссылка на чат обязательна для заполнения.')
             return render(request, 'dashboard/add_monitored_chat.html')
         
-        # Проверяем лимиты подписки
-        current_chats = MonitoredChat.objects.filter(user=request.user, is_active=True).count()
-        max_chats = request.user.get_chats_limit()
+        # Импортируем ChatRequest
+        from apps.telegram_parser.models import ChatRequest
+        import telebot
         
-        if current_chats >= max_chats:
-            messages.error(request, f'Достигнут лимит чатов для вашего тарифа ({max_chats}).')
-            return redirect('dashboard:monitored_chats')
-        
-        # Проверяем, не добавлен ли уже этот чат
-        if MonitoredChat.objects.filter(user=request.user, chat_id=chat_id).exists():
-            messages.error(request, 'Этот чат уже добавлен в список отслеживаемых.')
-            return render(request, 'dashboard/add_monitored_chat.html')
-        
-        # Создаем запись
-        monitored_chat = MonitoredChat.objects.create(
+        # Создаем заявку
+        chat_request = ChatRequest.objects.create(
             user=request.user,
-            chat_id=chat_id,
-            chat_name=chat_name,
-            chat_username=chat_username,
-            is_active=True
+            chat_link=chat_link,
+            chat_description=chat_description,
+            status='pending'
         )
         
-        messages.success(request, f'Чат "{chat_name or chat_id}" добавлен в отслеживаемые.')
+        # Отправляем уведомление администратору
+        try:
+            bot = telebot.TeleBot('7193620780:AAEM_QlyHeGMFbppRp2Uw7ObBrL73lEjkL0')
+            admin_message = f"""
+🆕 <b>Новая заявка на добавление чата</b>
+
+👤 <b>Пользователь:</b> {request.user.username} (ID: {request.user.id})
+📧 <b>Email:</b> {request.user.email}
+
+🔗 <b>Ссылка на чат:</b> {chat_link}
+
+📝 <b>Описание:</b>
+{chat_description if chat_description else 'Не указано'}
+
+🆔 <b>ID заявки:</b> {chat_request.id}
+"""
+            bot.send_message(911873673, admin_message, parse_mode='HTML')
+        except Exception as e:
+            print(f"Error sending notification to admin: {e}")
+        
+        messages.success(request, 'Заявка на добавление чата отправлена! Мы обработаем её в ближайшее время.')
         return redirect('dashboard:monitored_chats')
     
     return render(request, 'dashboard/add_monitored_chat.html')

@@ -69,6 +69,61 @@ class UserChatSettings(models.Model):
         self.save()
 
 
+class ChatRequest(models.Model):
+    """Заявки пользователей на добавление новых чатов"""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Ожидает обработки'),
+        ('approved', 'Одобрена'),
+        ('rejected', 'Отклонена'),
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='chat_requests',
+        verbose_name="Пользователь"
+    )
+    chat_link = models.CharField(
+        max_length=500,
+        verbose_name="Ссылка на чат",
+        help_text="Ссылка приглашения или @username чата"
+    )
+    chat_description = models.TextField(
+        blank=True,
+        verbose_name="Описание чата",
+        help_text="Дополнительная информация о чате"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name="Статус заявки"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создана")
+    processed_at = models.DateTimeField(null=True, blank=True, verbose_name="Обработана")
+    admin_comment = models.TextField(blank=True, verbose_name="Комментарий администратора")
+    global_chat = models.ForeignKey(
+        GlobalChat,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Созданный глобальный чат"
+    )
+    
+    class Meta:
+        verbose_name = "Заявка на добавление чата"
+        verbose_name_plural = "Заявки на добавление чатов"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.chat_link} ({self.get_status_display()})"
+
+
 class KeywordGroup(models.Model):
     """Группы ключевых слов пользователя"""
     
