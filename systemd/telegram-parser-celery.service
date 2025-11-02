@@ -1,6 +1,7 @@
 [Unit]
 Description=NITIN Celery Worker
-After=network.target redis.service postgresql.service
+After=network.target redis.service postgresql.service telegram-parser.service
+Wants=redis.service
 
 [Service]
 Type=exec
@@ -10,13 +11,17 @@ WorkingDirectory=/root/nitinleads
 Environment="PATH=/root/nitinleads/venv/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="DJANGO_SETTINGS_MODULE=config.settings_production"
 
+# Даем время Redis и PostgreSQL запуститься
+ExecStartPre=/bin/sleep 5
+
 ExecStart=/root/nitinleads/venv/bin/celery -A config worker \
           --loglevel=info \
           --logfile=/root/nitinleads/logs/celery-worker.log \
-          --concurrency=4
+          --concurrency=2
 
 Restart=always
 RestartSec=10
+TimeoutStartSec=60
 
 StandardOutput=append:/root/nitinleads/logs/celery-worker.log
 StandardError=append:/root/nitinleads/logs/celery-worker-error.log
