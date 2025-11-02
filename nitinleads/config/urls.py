@@ -19,6 +19,6 @@ urlpatterns = [
 ]
 
 # Admin site customization
-admin.site.site_header = "Telegram Parser SaaS"
-admin.site.site_title = "Telegram Parser Admin"
-admin.site.index_title = "Добро пожаловать в админ панель"
+admin.site.site_header = "NITN"
+admin.site.site_title = "NITN Admin"
+admin.site.index_title = "Добро пожаловать в NITN"
