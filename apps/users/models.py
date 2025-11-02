@@ -30,6 +30,38 @@ class User(AbstractUser):
         help_text="ID чата куда отправлять уведомления"
     )
     
+    # Sender account (для отправки сообщений лидам)
+    sender_api_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Sender API ID",
+        help_text="API ID для аккаунта-отправителя"
+    )
+    sender_api_hash = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Sender API Hash",
+        help_text="API Hash для аккаунта-отправителя"
+    )
+    sender_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Sender Phone",
+        help_text="Номер телефона аккаунта-отправителя"
+    )
+    sender_session_string = models.TextField(
+        blank=True,
+        verbose_name="Sender Session",
+        help_text="Строка сессии для аккаунта-отправителя"
+    )
+    
+    # Message templates
+    default_message_template = models.TextField(
+        blank=True,
+        verbose_name="Шаблон сообщения по умолчанию",
+        help_text="Шаблон для автоматической отправки. Используйте {name} для имени получателя"
+    )
+    
     # Subscription
     subscription_plan = models.CharField(
         max_length=20,
@@ -71,6 +103,16 @@ class User(AbstractUser):
     def has_telegram_bot(self):
         """Проверяет, есть ли у пользователя настроенный бот"""
         return bool(self.telegram_bot_token and self.notification_chat_id)
+    
+    @property
+    def has_sender_account(self):
+        """Проверяет, настроен ли аккаунт для отправки сообщений"""
+        return bool(
+            self.sender_api_id and 
+            self.sender_api_hash and 
+            self.sender_phone and 
+            self.sender_session_string
+        )
     
     @property
     def subscription_limits(self):

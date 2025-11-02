@@ -8,9 +8,12 @@ from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import timedelta
 import json
+import logging
 
 from apps.telegram_parser.models import KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus, GlobalChat, UserChatSettings, RawMessage
 from apps.users.models import User
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -882,3 +885,88 @@ def statistics(request):
     }
     
     return render(request, 'dashboard/statistics.html', context)
+
+
+@login_required
+@require_http_methods(['POST'])
+def send_message_to_lead(request, message_id):
+    """Отправка сообщения лиду через sender-аккаунт"""
+    import asyncio
+    from apps.telegram_parser.sender_client import SenderClient
+    from django.utils import timezone
+    
+    try:
+        # Получаем сообщение
+        message = get_object_or_404(ProcessedMessage, id=message_id, user=request.user)
+        
+        # Проверяем, настроен ли sender-аккаунт
+        if not request.user.has_sender_account:
+            return JsonResponse({
+                'success': False,
+                'message': 'Sender-аккаунт не настроен. Настройте его в настройках профиля.'
+            }, status=400)
+        
+        # Проверяем, есть ли sender_id у лида
+        if not message.sender_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'У этого сообщения нет ID отправителя'
+            }, status=400)
+        
+        # Получаем текст сообщения
+        custom_text = request.POST.get('message_text', '').strip()
+        
+        if not custom_text:
+            # Используем шаблон по умолчанию
+            template = request.user.default_message_template
+            if not template:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Введите текст сообщения или настройте шаблон по умолчанию'
+                }, status=400)
+            
+            # Заменяем переменные в шаблоне
+            message_text = template.replace('{name}', message.sender_name or 'там')
+        else:
+            message_text = custom_text
+        
+        # Создаем sender client
+        sender = SenderClient(
+            api_id=request.user.sender_api_id,
+            api_hash=request.user.sender_api_hash,
+            session_string=request.user.sender_session_string
+        )
+        
+        # Отправляем сообщение асинхронно
+        async def send():
+            await sender.connect()
+            success = await sender.send_message(message.sender_id, message_text)
+            await sender.disconnect()
+            return success
+        
+        # Запускаем в event loop
+        success = asyncio.run(send())
+        
+        if success:
+            # Обновляем запись
+            message.message_sent = True
+            message.message_sent_at = timezone.now()
+            message.sent_message_text = message_text
+            message.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Сообщение успешно отправлено!'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Ошибка при отправке сообщения. Проверьте логи.'
+            }, status=500)
+            
+    except Exception as e:
+        logger.error(f"Error sending message to lead: {e}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Ошибка: {str(e)}'
+        }, status=500)

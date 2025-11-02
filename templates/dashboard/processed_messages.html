@@ -119,9 +119,22 @@
                                 </div>
                             </div>
                             {% if message.message_link %}
-                            <a href="{{ message.message_link }}" target="_blank" class="btn btn-sm btn-outline-primary w-100">
+                            <a href="{{ message.message_link }}" target="_blank" class="btn btn-sm btn-outline-primary w-100 mb-2">
                                 <i class="fas fa-external-link-alt"></i> Открыть в Telegram
                             </a>
+                            {% endif %}
+                            
+                            <!-- Кнопка отправки сообщения -->
+                            {% if user.has_sender_account and message.sender_id %}
+                            <button type="button" 
+                                    class="btn btn-sm {% if message.message_sent %}btn-success{% else %}btn-outline-info{% endif %} w-100"
+                                    onclick="openSendMessageModal({{ message.id }}, '{{ message.sender_name|escapejs }}', {{ message.message_sent|yesno:'true,false' }})">
+                                {% if message.message_sent %}
+                                <i class="fas fa-check"></i> Сообщение отправлено
+                                {% else %}
+                                <i class="fas fa-paper-plane"></i> Написать
+                                {% endif %}
+                            </button>
                             {% endif %}
                         </div>
                     </div>
@@ -224,5 +237,44 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// Функция для отправки сообщения
+function openSendMessageModal(messageId, senderName, alreadySent) {
+    if (alreadySent) {
+        if (!confirm('Сообщение уже было отправлено. Отправить еще раз?')) {
+            return;
+        }
+    }
+    
+    const messageText = prompt(`Введите текст сообщения для ${senderName}:`, '{% if user.default_message_template %}{{ user.default_message_template|escapejs }}{% endif %}');
+    
+    if (messageText === null || messageText.trim() === '') {
+        return;
+    }
+    
+    // Отправляем сообщение
+    fetch(`/message/${messageId}/send/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `message_text=${encodeURIComponent(messageText)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Сообщение успешно отправлено!');
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при отправке сообщения');
+    });
+}
 </script>
 {% endblock %}
+

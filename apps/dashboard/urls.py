@@ -28,6 +28,7 @@ urlpatterns = [
     path('messages/', views.processed_messages, name='processed_messages'),
     path('message/<int:message_id>/update-status/', views.ajax_update_message_status, name='ajax_update_message_status'),
     path('messages/<int:message_id>/status/', views.update_message_status, name='update_message_status'),
+    path('message/<int:message_id>/send/', views.send_message_to_lead, name='send_message_to_lead'),
     
     # РќР°СЃС‚СЂРѕР№РєРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     path('settings/', views.settings, name='settings'),

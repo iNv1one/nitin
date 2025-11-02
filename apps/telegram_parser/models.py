@@ -361,6 +361,23 @@ class ProcessedMessage(models.Model):
         verbose_name="Продажа совершена"
     )
     
+    # Outreach tracking (отправка сообщений)
+    message_sent = models.BooleanField(
+        default=False,
+        verbose_name="Сообщение отправлено",
+        help_text="Было ли отправлено сообщение через sender-аккаунт"
+    )
+    message_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Дата отправки сообщения"
+    )
+    sent_message_text = models.TextField(
+        blank=True,
+        verbose_name="Отправленный текст",
+        help_text="Текст сообщения, которое было отправлено"
+    )
+    
     # Additional info
     notes = models.TextField(
         blank=True,
