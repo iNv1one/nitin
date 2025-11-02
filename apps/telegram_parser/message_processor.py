@@ -98,10 +98,15 @@ class MessageProcessor:
                     ai_result = ""
                     
                     if group.use_ai_filter and group.ai_prompt:
+                        logger.info(f"🤖 AI проверка включена для группы '{group.name}' (user {user_id})")
                         ai_approved, ai_result = self._check_ai_filter(message_text, group.ai_prompt)
-                        logger.info(f"AI filter result for user {user_id}: {ai_approved}")
+                        logger.info(f"🤖 AI ответ: '{ai_result}' | Одобрено: {ai_approved}")
+                        
+                        if not ai_approved:
+                            logger.info(f"❌ Сообщение отклонено AI фильтром для user {user_id}")
                     
                     if ai_approved:
+                        logger.info(f"✅ Сообщение прошло все проверки для user {user_id}")
                         # Сохраняем в БД
                         processed_msg = self._save_processed_message(
                             user_data, group, message_data, matched_keywords, ai_result
@@ -109,7 +114,9 @@ class MessageProcessor:
                         
                         # Отправляем уведомление
                         if processed_msg:
+                            logger.info(f"📨 Отправка уведомления в Telegram для user {user_id}")
                             self._send_notification(user_data, processed_msg)
+                            logger.info(f"✅ Уведомление отправлено для сообщения {processed_msg.id}")
                 
         except Exception as e:
             logger.error(f"Error processing message for user {user_data.get('user__id')}: {e}")
@@ -145,7 +152,7 @@ class MessageProcessor:
             from openai import OpenAI
             from django.conf import settings
             
-            logger.info(f"AI filter check for text: {text[:50]}...")
+            logger.info(f"🤖 AI проверка сообщения: '{text[:100]}...'")
             
             # Создаем клиент для Grok API
             client = OpenAI(
@@ -164,6 +171,8 @@ class MessageProcessor:
 Не добавляй никаких пояснений, только YES или NO.
 """
             
+            logger.info(f"🤖 AI промт: '{prompt[:100]}...'")
+            
             # Отправляем запрос к Grok
             response = client.chat.completions.create(
                 model="grok-3-mini",  # Grok модель
@@ -177,15 +186,17 @@ class MessageProcessor:
             
             # Получаем результат
             result = response.choices[0].message.content.strip().upper()
-            logger.info(f"AI filter result: {result}")
+            logger.info(f"🤖 AI ответил: '{result}'")
             
             # Проверяем ответ
             is_approved = result in ['YES', 'Y', '1', 'TRUE', 'ДА']
             
+            logger.info(f"🤖 Решение: {'ОДОБРЕНО ✅' if is_approved else 'ОТКЛОНЕНО ❌'}")
+            
             return is_approved, result
             
         except Exception as e:
-            logger.error(f"AI filter error: {e}")
+            logger.error(f"❌ AI filter error: {e}")
             # При ошибке AI пропускаем сообщение (не блокируем)
             return True, f"AI filter error: {str(e)}"
     
