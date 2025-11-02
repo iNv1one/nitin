@@ -291,7 +291,7 @@ def processed_messages(request):
     date_filter = request.GET.get('date')
     
     if status_filter:
-        messages_qs = messages_qs.filter(crm_status=status_filter)
+        messages_qs = messages_qs.filter(quality_status=status_filter)
     
     if keyword_filter:
         messages_qs = messages_qs.filter(keyword_group__name__icontains=keyword_filter)
@@ -312,7 +312,7 @@ def processed_messages(request):
     page_obj = paginator.get_page(page_number)
     
     # Статистика для фильтров
-    status_counts = ProcessedMessage.objects.filter(user=user).values('crm_status').annotate(count=Count('id'))
+    status_counts = ProcessedMessage.objects.filter(user=user).values('quality_status').annotate(count=Count('id'))
     keyword_groups = KeywordGroup.objects.filter(user=user)
     
     context = {
@@ -332,18 +332,31 @@ def processed_messages(request):
 @require_http_methods(["POST"])
 def update_message_status(request, message_id):
     """
-    Обновление CRM статуса сообщения
+    Обновление статуса сообщения
     """
     message = get_object_or_404(ProcessedMessage, id=message_id, user=request.user)
-    new_status = request.POST.get('status')
     
-    if new_status in ['new', 'in_progress', 'completed', 'rejected']:
-        message.crm_status = new_status
-        message.save()
-        
-        messages.success(request, 'Статус сообщения обновлен.')
-    else:
-        messages.error(request, 'Неверный статус.')
+    # Обновление quality_status
+    quality_status = request.POST.get('quality_status')
+    if quality_status in ['none', 'unqualified', 'qualified', 'spam']:
+        message.quality_status = quality_status
+    
+    # Обновление boolean флагов
+    dialog_started = request.POST.get('dialog_started')
+    if dialog_started is not None:
+        message.dialog_started = dialog_started == 'true'
+    
+    sale_made = request.POST.get('sale_made')
+    if sale_made is not None:
+        message.sale_made = sale_made == 'true'
+    
+    # Обновление заметок
+    notes = request.POST.get('notes')
+    if notes is not None:
+        message.notes = notes
+    
+    message.save()
+    messages.success(request, 'Статус сообщения обновлен.')
     
     return redirect('dashboard:processed_messages')
 
