@@ -140,38 +140,53 @@ class MessageProcessor:
         return matched
     
     def _check_ai_filter(self, text: str, prompt: str) -> tuple[bool, str]:
-        """Проверяем сообщение через AI"""
+        """Проверяем сообщение через AI (Grok)"""
         try:
-            # Здесь интеграция с OpenAI или другим AI сервисом
-            # Пока заглушка
-            logger.info(f"AI filter check requested for text: {text[:50]}...")
-            
-            # TODO: Реализовать настоящую проверку через AI
-            # Пример интеграции с OpenAI:
-            """
             from openai import OpenAI
+            from django.conf import settings
+            
+            logger.info(f"AI filter check for text: {text[:50]}...")
+            
+            # Создаем клиент для Grok API
             client = OpenAI(
                 api_key=settings.OPENAI_API_KEY,
                 base_url=settings.OPENAI_BASE_URL
             )
             
+            # Формируем системный промт
+            system_prompt = f"""
+{prompt}
+
+ВАЖНО: Ты должен ответить ТОЛЬКО словом "YES" или "NO".
+- YES - если сообщение соответствует критериям
+- NO - если сообщение НЕ соответствует критериям
+
+Не добавляй никаких пояснений, только YES или NO.
+"""
+            
+            # Отправляем запрос к Grok
             response = client.chat.completions.create(
-                model="grok-3",
+                model="grok-beta",  # Grok модель
                 messages=[
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": text}
-                ]
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Проверь это сообщение:\n\n{text}"}
+                ],
+                max_tokens=10,
+                temperature=0.3
             )
             
-            result = response.choices[0].message.content.strip()
-            return result.lower() in ['true', 'yes', '1'], result
-            """
+            # Получаем результат
+            result = response.choices[0].message.content.strip().upper()
+            logger.info(f"AI filter result: {result}")
             
-            # Временная заглушка
-            return True, "AI filter not implemented yet"
+            # Проверяем ответ
+            is_approved = result in ['YES', 'Y', '1', 'TRUE', 'ДА']
+            
+            return is_approved, result
             
         except Exception as e:
             logger.error(f"AI filter error: {e}")
+            # При ошибке AI пропускаем сообщение (не блокируем)
             return True, f"AI filter error: {str(e)}"
     
     def _save_processed_message(

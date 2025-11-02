@@ -119,9 +119,9 @@ LOGOUT_REDIRECT_URL = '/'
 TELEGRAM_API_ID = config('TELEGRAM_API_ID', cast=int)
 TELEGRAM_API_HASH = config('TELEGRAM_API_HASH')
 
-# OpenAI settings
-OPENAI_API_KEY = config('OPENAI_API_KEY')
-OPENAI_BASE_URL = config('OPENAI_BASE_URL', default='https://api.openai.com/v1')
+# Grok AI settings (использует OpenAI-совместимый API)
+OPENAI_API_KEY = config('OPENAI_API_KEY', default='xai-0HtySrKXBtkSSO7Tmv05DXNrDUDMLjUzc5qHmSSxpDSWBW1UiRlqNXFgjlC089kKSOowWuxIw7FMG0Wn')
+OPENAI_BASE_URL = config('OPENAI_BASE_URL', default='https://api.x.ai/v1')
 
 # Celery Configuration
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
