@@ -8,8 +8,8 @@ Type=exec
 User=root
 Group=root
 WorkingDirectory=/root/nitinleads
+EnvironmentFile=/etc/systemd/system/telegram-parser.env
 Environment="PATH=/root/nitinleads/venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="DJANGO_SETTINGS_MODULE=config.settings_production"
 
 # Даем время Redis и PostgreSQL запуститься
 ExecStartPre=/bin/sleep 5
