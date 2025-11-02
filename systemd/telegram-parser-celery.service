@@ -1,18 +1,25 @@
 [Unit]
-Description=Telegram Parser Celery Worker
-After=network.target redis.service
+Description=NITIN Celery Worker
+After=network.target redis.service postgresql.service
 
 [Service]
-Type=forking
-User=your-username
-Group=www-data
-WorkingDirectory=/path/to/telegram-parser-saas
-Environment="PATH=/path/to/telegram-parser-saas/venv/bin"
+Type=exec
+User=root
+Group=root
+WorkingDirectory=/root/nitinleads
+Environment="PATH=/root/nitinleads/venv/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="DJANGO_SETTINGS_MODULE=config.settings_production"
-ExecStart=/path/to/telegram-parser-saas/venv/bin/celery -A config worker \
+
+ExecStart=/root/nitinleads/venv/bin/celery -A config worker \
           --loglevel=info \
-          --logfile=/var/log/telegram-parser/celery.log \
-          --pidfile=/var/run/celery/telegram-parser-celery.pid
+          --logfile=/root/nitinleads/logs/celery-worker.log \
+          --concurrency=4
+
+Restart=always
+RestartSec=10
+
+StandardOutput=append:/root/nitinleads/logs/celery-worker.log
+StandardError=append:/root/nitinleads/logs/celery-worker-error.log
 
 [Install]
 WantedBy=multi-user.target

@@ -57,3 +57,38 @@ LOGGING['handlers']['file']['filename'] = '/var/log/telegram-parser/django.log'
 LOGGING['root']['level'] = 'WARNING'
 LOGGING['loggers']['django']['level'] = 'WARNING'
 LOGGING['loggers']['telegram_parser']['level'] = 'INFO'
+
+# Celery Beat Schedule - периодические задачи
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    # Обновление статистики каждый час
+    'update-bot-statistics': {
+        'task': 'apps.telegram_parser.tasks.update_bot_statistics',
+        'schedule': crontab(minute=0),  # Каждый час
+    },
+    # Проверка здоровья системы каждые 5 минут
+    'health-check': {
+        'task': 'apps.telegram_parser.tasks.health_check',
+        'schedule': 300.0,  # 5 минут в секундах
+    },
+    # Очистка старых сообщений каждый день в 3:00
+    'cleanup-old-messages': {
+        'task': 'apps.telegram_parser.tasks.cleanup_old_messages',
+        'schedule': crontab(hour=3, minute=0),
+    },
+    # Сброс дневного счетчика в полночь
+    'reset-daily-counter': {
+        'task': 'apps.telegram_parser.tasks.reset_daily_message_counter',
+        'schedule': crontab(hour=0, minute=0),
+    },
+}
+
+# Настройки Celery
+CELERY_TIMEZONE = 'Europe/Moscow'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 минут максимум на задачу
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+

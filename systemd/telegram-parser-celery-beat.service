@@ -1,0 +1,26 @@
+[Unit]
+Description=NITIN Celery Beat Scheduler
+After=network.target redis.service postgresql.service
+
+[Service]
+Type=exec
+User=root
+Group=root
+WorkingDirectory=/root/nitinleads
+Environment="PATH=/root/nitinleads/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="DJANGO_SETTINGS_MODULE=config.settings_production"
+
+ExecStart=/root/nitinleads/venv/bin/celery -A config beat \
+          --loglevel=info \
+          --logfile=/root/nitinleads/logs/celery-beat.log \
+          --pidfile=/tmp/celery-beat.pid \
+          --schedule=/tmp/celerybeat-schedule
+
+Restart=always
+RestartSec=10
+
+StandardOutput=append:/root/nitinleads/logs/celery-beat.log
+StandardError=append:/root/nitinleads/logs/celery-beat-error.log
+
+[Install]
+WantedBy=multi-user.target
