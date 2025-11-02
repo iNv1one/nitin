@@ -120,7 +120,7 @@ TELEGRAM_API_ID = config('TELEGRAM_API_ID', cast=int)
 TELEGRAM_API_HASH = config('TELEGRAM_API_HASH')
 
 # Grok AI settings (использует OpenAI-совместимый API)
-OPENAI_API_KEY = config('OPENAI_API_KEY', default='xai-0HtySrKXBtkSSO7Tmv05DXNrDUDMLjUzc5qHmSSxpDSWBW1UiRlqNXFgjlC089kKSOowWuxIw7FMG0Wn')
+OPENAI_API_KEY = config('OPENAI_API_KEY')
 OPENAI_BASE_URL = config('OPENAI_BASE_URL', default='https://api.x.ai/v1')
 
 # Celery Configuration
