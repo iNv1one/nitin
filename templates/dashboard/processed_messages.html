@@ -62,7 +62,7 @@
             <div class="card mb-3 message-row status-{{ message.quality_status }}">
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-md-7">
                             <h5 class="card-title">
                                 От: <strong>{{ message.sender_name|default:"Неизвестно" }}</strong>
                                 {% if message.sender_username %} (@{{ message.sender_username }}){% endif %}
@@ -73,26 +73,38 @@
                                 <i class="fas fa-clock"></i> {{ message.processed_at|date:"d.m.Y H:i" }}
                             </small>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-5">
                             <div class="mb-2">
                                 <strong>Статус:</strong>
-                                <div class="btn-group d-flex mb-2" role="group">
-                                    {% if message.quality_status == 'qualified' %}
-                                        <span class="badge bg-success w-100">⭐ Квал</span>
-                                    {% elif message.quality_status == 'unqualified' %}
-                                        <span class="badge bg-danger w-100">❌ Неквал</span>
-                                    {% elif message.quality_status == 'spam' %}
-                                        <span class="badge bg-dark w-100">🚫 Спам</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary w-100">⚪ Новое</span>
-                                    {% endif %}
+                                <div class="btn-group w-100 mb-2" role="group" aria-label="Quality status">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-secondary {% if message.quality_status == 'unqualified' %}active{% endif %}"
+                                            onclick="updateStatus({{ message.id }}, 'unqualified', this)">
+                                        {% if message.quality_status == 'unqualified' %}✓{% endif %} Неквал
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-secondary {% if message.quality_status == 'qualified' %}active{% endif %}"
+                                            onclick="updateStatus({{ message.id }}, 'qualified', this)">
+                                        {% if message.quality_status == 'qualified' %}✓{% endif %} Квал
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-secondary {% if message.quality_status == 'spam' %}active{% endif %}"
+                                            onclick="updateStatus({{ message.id }}, 'spam', this)">
+                                        {% if message.quality_status == 'spam' %}✓{% endif %} Спам
+                                    </button>
                                 </div>
-                                {% if message.dialog_started %}
-                                    <span class="badge bg-info w-100 mb-1">💬 Начали диалог</span>
-                                {% endif %}
-                                {% if message.sale_made %}
-                                    <span class="badge bg-warning text-dark w-100 mb-1">💰 Есть продажа</span>
-                                {% endif %}
+                                <div class="btn-group w-100 mb-2" role="group" aria-label="Progress status">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-secondary {% if message.dialog_started %}active{% endif %}"
+                                            onclick="updateProgress({{ message.id }}, 'dialog', {{ message.dialog_started|yesno:'true,false' }}, this)">
+                                        {% if message.dialog_started %}✓{% endif %} Начали диалог
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-secondary {% if message.sale_made %}active{% endif %}"
+                                            onclick="updateProgress({{ message.id }}, 'sale', {{ message.sale_made|yesno:'true,false' }}, this)">
+                                        {% if message.sale_made %}✓{% endif %} Есть продажа
+                                    </button>
+                                </div>
                             </div>
                             {% if message.message_link %}
                             <a href="{{ message.message_link }}" target="_blank" class="btn btn-sm btn-outline-primary w-100">
@@ -111,4 +123,94 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+function updateStatus(messageId, status, button) {
+    // Отправляем запрос на обновление статуса
+    fetch(`/dashboard/message/${messageId}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `quality_status=${status}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем UI - снимаем active со всех кнопок в группе и добавляем на текущую
+            const btnGroup = button.parentElement;
+            btnGroup.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active');
+                // Убираем галочку
+                btn.textContent = btn.textContent.replace('✓ ', '');
+            });
+            // Добавляем active и галочку на текущую кнопку
+            button.classList.add('active');
+            if (!button.textContent.startsWith('✓')) {
+                button.textContent = '✓ ' + button.textContent.trim();
+            }
+        } else {
+            alert('Ошибка при обновлении статуса');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при обновлении статуса');
+    });
+}
+
+function updateProgress(messageId, type, currentValue, button) {
+    // Toggle значение
+    const newValue = !currentValue;
+    const field = type === 'dialog' ? 'dialog_started' : 'sale_made';
+    
+    fetch(`/dashboard/message/${messageId}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `${field}=${newValue}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Toggle active класс и галочку
+            if (newValue) {
+                button.classList.add('active');
+                if (!button.textContent.startsWith('✓')) {
+                    button.textContent = '✓ ' + button.textContent.trim();
+                }
+            } else {
+                button.classList.remove('active');
+                button.textContent = button.textContent.replace('✓ ', '');
+            }
+            // Обновляем атрибут onclick с новым значением
+            button.setAttribute('onclick', `updateProgress(${messageId}, '${type}', ${newValue}, this)`);
+        } else {
+            alert('Ошибка при обновлении статуса');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при обновлении статуса');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
 {% endblock %}

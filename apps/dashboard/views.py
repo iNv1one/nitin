@@ -378,6 +378,84 @@ def update_message_status(request, message_id):
 
 
 @login_required
+@require_http_methods(["POST"])
+def ajax_update_message_status(request, message_id):
+    """
+    AJAX обновление статуса сообщения с синхронизацией в Telegram
+    """
+    try:
+        message = get_object_or_404(ProcessedMessage, id=message_id, user=request.user)
+        
+        # Обновление quality_status
+        quality_status = request.POST.get('quality_status')
+        if quality_status in ['none', 'unqualified', 'qualified', 'spam']:
+            message.quality_status = quality_status
+        
+        # Обновление boolean флагов
+        dialog_started = request.POST.get('dialog_started')
+        if dialog_started is not None:
+            message.dialog_started = dialog_started == 'true'
+        
+        sale_made = request.POST.get('sale_made')
+        if sale_made is not None:
+            message.sale_made = sale_made == 'true'
+        
+        message.save()
+        
+        # Обновляем сообщение в Telegram, если есть telegram_message_id
+        if message.telegram_message_id and request.user.telegram_bot_token:
+            try:
+                import telebot
+                from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+                
+                bot = telebot.TeleBot(request.user.telegram_bot_token)
+                
+                # Формируем клавиатуру с обновленными статусами
+                keyboard = InlineKeyboardMarkup(row_width=3)
+                
+                # Первый ряд - качество
+                btn_unqualified = InlineKeyboardButton(
+                    f"{'✅ ' if message.quality_status == 'unqualified' else ''}Неквал",
+                    callback_data=f"unqualified:{message.id}"
+                )
+                btn_qualified = InlineKeyboardButton(
+                    f"{'✅ ' if message.quality_status == 'qualified' else ''}Квал",
+                    callback_data=f"qualified:{message.id}"
+                )
+                btn_spam = InlineKeyboardButton(
+                    f"{'✅ ' if message.quality_status == 'spam' else ''}Спам",
+                    callback_data=f"spam:{message.id}"
+                )
+                
+                # Второй ряд - прогресс
+                btn_dialog = InlineKeyboardButton(
+                    f"{'✅ ' if message.dialog_started else ''}Начали диалог",
+                    callback_data=f"dialog_started:{message.id}"
+                )
+                btn_sale = InlineKeyboardButton(
+                    f"{'✅ ' if message.sale_made else ''}Есть продажа",
+                    callback_data=f"sale_made:{message.id}"
+                )
+                
+                keyboard.add(btn_unqualified, btn_qualified, btn_spam)
+                keyboard.add(btn_dialog, btn_sale)
+                
+                # Обновляем сообщение
+                bot.edit_message_reply_markup(
+                    chat_id=request.user.notification_chat_id,
+                    message_id=message.telegram_message_id,
+                    reply_markup=keyboard
+                )
+            except Exception as e:
+                print(f"Error updating Telegram message: {e}")
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        print(f"Error in ajax_update_message_status: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
 def settings(request):
     """
     Настройки пользователя
