@@ -127,7 +127,7 @@
 <script>
 function updateStatus(messageId, status, button) {
     // Отправляем запрос на обновление статуса
-    fetch(`/dashboard/message/${messageId}/update-status/`, {
+    fetch(`/message/${messageId}/update-status/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -165,7 +165,7 @@ function updateProgress(messageId, type, currentValue, button) {
     const newValue = !currentValue;
     const field = type === 'dialog' ? 'dialog_started' : 'sale_made';
     
-    fetch(`/dashboard/message/${messageId}/update-status/`, {
+    fetch(`/message/${messageId}/update-status/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
