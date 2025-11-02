@@ -209,8 +209,8 @@ def start_user_bots_polling():
         
         logger.info("Starting user bots polling...")
         
-        # Получаем всех активных пользователей с bot_token
-        users = User.objects.filter(is_active=True).exclude(bot_token__isnull=True).exclude(bot_token='')
+        # Получаем всех активных пользователей с telegram_bot_token
+        users = User.objects.filter(is_active=True).exclude(telegram_bot_token__isnull=True).exclude(telegram_bot_token='')
         
         if not users.exists():
             logger.warning("No users with bot tokens found")
@@ -222,7 +222,7 @@ def start_user_bots_polling():
                 logger.info(f"Starting bot polling for user {user.username} (ID: {user.id})")
                 
                 # Создаем экземпляр бота
-                bot = telebot.TeleBot(user.bot_token, parse_mode='HTML')
+                bot = telebot.TeleBot(user.telegram_bot_token, parse_mode='HTML')
                 
                 # Настраиваем обработчики
                 setup_bot_handlers(bot, user)
