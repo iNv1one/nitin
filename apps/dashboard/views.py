@@ -714,7 +714,63 @@ def parser_status(request):
 @login_required
 def raw_messages(request):
     """Просмотр всех сырых сообщений, полученных парсером"""
-    messages_list = RawMessage.objects.all().order_by('-received_at')
+    messages_list = RawMessage.objects.all()
+    
+    # Фильтрация по чату
+    chat_id = request.GET.get('chat_id')
+    if chat_id:
+        messages_list = messages_list.filter(chat_id=chat_id)
+    
+    # Фильтрация по названию чата
+    chat_name = request.GET.get('chat_name')
+    if chat_name:
+        messages_list = messages_list.filter(chat_name__icontains=chat_name)
+    
+    # Фильтрация по отправителю
+    sender = request.GET.get('sender')
+    if sender:
+        messages_list = messages_list.filter(
+            Q(sender_name__icontains=sender) | Q(sender_username__icontains=sender)
+        )
+    
+    # Фильтрация по тексту
+    search_text = request.GET.get('search_text')
+    if search_text:
+        messages_list = messages_list.filter(message_text__icontains=search_text)
+    
+    # Фильтрация по дате
+    date_from = request.GET.get('date_from')
+    if date_from:
+        try:
+            from datetime import datetime
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            messages_list = messages_list.filter(message_date__gte=date_from_obj)
+        except ValueError:
+            pass
+    
+    date_to = request.GET.get('date_to')
+    if date_to:
+        try:
+            from datetime import datetime
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+            # Добавляем 1 день для включения всего дня
+            date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59)
+            messages_list = messages_list.filter(message_date__lte=date_to_obj)
+        except ValueError:
+            pass
+    
+    # Фильтр по типу (канал/чат)
+    is_channel = request.GET.get('is_channel')
+    if is_channel == 'true':
+        messages_list = messages_list.filter(is_channel_post=True)
+    elif is_channel == 'false':
+        messages_list = messages_list.filter(is_channel_post=False)
+    
+    # Сортировка
+    messages_list = messages_list.order_by('-received_at')
+    
+    # Получаем список уникальных чатов для фильтра
+    unique_chats = RawMessage.objects.values('chat_id', 'chat_name').distinct().order_by('chat_name')
     
     # Пагинация
     paginator = Paginator(messages_list, 50)  # 50 сообщений на страницу
@@ -722,8 +778,18 @@ def raw_messages(request):
     messages_page = paginator.get_page(page_number)
     
     context = {
-        'raw_messages': messages_page,  # Переименовали с 'messages' на 'raw_messages'
+        'raw_messages': messages_page,
         'total_count': messages_list.count(),
+        'unique_chats': unique_chats,
+        'filters': {
+            'chat_id': chat_id or '',
+            'chat_name': chat_name or '',
+            'sender': sender or '',
+            'search_text': search_text or '',
+            'date_from': date_from or '',
+            'date_to': date_to or '',
+            'is_channel': is_channel or '',
+        }
     }
     
     return render(request, 'dashboard/raw_messages.html', context)
