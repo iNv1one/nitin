@@ -1,464 +1,925 @@
-from django.contrib import adminfrom django.contrib import admin
+from django.contrib import adminfrom django.contrib import adminfrom django.contrib import admin
 
-from django.utils.html import format_htmlfrom django.utils.html import format_html
+from django.utils.html import format_html
 
-from django.urls import reversefrom django.urls import reverse
+from django.urls import reversefrom django.utils.html import format_htmlfrom django.utils.html import format_html
 
-from django.db.models import Count, Qfrom django.db.models import Count, Q
+from django.db.models import Count, Q
+
+from .models import (from django.urls import reversefrom django.urls import reverse
+
+    KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,
+
+    GlobalChat, UserChatSettings, ChatRequest, MessageTemplatefrom django.db.models import Count, Qfrom django.db.models import Count, Q
+
+)
 
 from .models import (from .models import (
 
-    KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,    KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,
-
-    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate
-
-))
 
 
+@admin.register(KeywordGroup)    KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,    KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,
 
+class KeywordGroupAdmin(admin.ModelAdmin):
 
+    """Админка для групп ключевых слов"""    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate
 
-@admin.register(KeywordGroup)@admin.register(KeywordGroup)
+    
 
-class KeywordGroupAdmin(admin.ModelAdmin):class KeywordGroupAdmin(admin.ModelAdmin):
+    list_display = [))
 
-    """Админка для групп ключевых слов"""    """Админка для групп ключевых слов"""
+        'name', 'user', 'keywords_count', 'use_ai_filter', 
 
-        
+        'messages_count', 'is_active', 'created_at'
 
-    list_display = [    list_display = [
+    ]
 
-        'name', 'user', 'keywords_count', 'use_ai_filter',         'name', 'user', 'keywords_count', 'use_ai_filter', 
+    list_filter = ['use_ai_filter', 'is_active', 'created_at', 'user__subscription_plan']
 
-        'messages_count', 'is_active', 'created_at'        'messages_count', 'is_active', 'created_at'
+    search_fields = ['name', 'user__username', 'keywords']
 
-    ]    ]
+    list_select_related = ['user']@admin.register(KeywordGroup)@admin.register(KeywordGroup)
 
-    list_filter = ['use_ai_filter', 'is_active', 'created_at', 'user__subscription_plan']    list_filter = ['use_ai_filter', 'is_active', 'created_at', 'user__subscription_plan']
+    
 
-    search_fields = ['name', 'user__username', 'keywords']    search_fields = ['name', 'user__username', 'keywords']
+    fieldsets = (class KeywordGroupAdmin(admin.ModelAdmin):class KeywordGroupAdmin(admin.ModelAdmin):
 
-    list_select_related = ['user']    list_select_related = ['user']
+        ('Основная информация', {
 
-        
+            'fields': ('user', 'name', 'keywords', 'is_active')    """Админка для групп ключевых слов"""    """Админка для групп ключевых слов"""
 
-    fieldsets = (    fieldsets = (
+        }),
 
-        ('Основная информация', {        ('Основная информация', {
+        ('AI настройки', {        
 
-            'fields': ('user', 'name', 'keywords', 'is_active')            'fields': ('user', 'name', 'keywords', 'is_active')
+            'fields': ('use_ai_filter', 'ai_prompt'),
+
+            'classes': ('collapse',)    list_display = [    list_display = [
+
+        }),
+
+        ('Метаданные', {        'name', 'user', 'keywords_count', 'use_ai_filter',         'name', 'user', 'keywords_count', 'use_ai_filter', 
+
+            'fields': ('created_at', 'updated_at'),
+
+            'classes': ('collapse',)        'messages_count', 'is_active', 'created_at'        'messages_count', 'is_active', 'created_at'
+
+        }),
+
+    )    ]    ]
+
+    
+
+    readonly_fields = ['created_at', 'updated_at']    list_filter = ['use_ai_filter', 'is_active', 'created_at', 'user__subscription_plan']    list_filter = ['use_ai_filter', 'is_active', 'created_at', 'user__subscription_plan']
+
+    
+
+    def keywords_count(self, obj):    search_fields = ['name', 'user__username', 'keywords']    search_fields = ['name', 'user__username', 'keywords']
+
+        return obj.keywords_count
+
+    keywords_count.short_description = 'Ключевые слова'    list_select_related = ['user']    list_select_related = ['user']
+
+    
+
+    def messages_count(self, obj):        
+
+        """Количество обработанных сообщений"""
+
+        count = obj.processed_messages.count()    fieldsets = (    fieldsets = (
+
+        if count > 0:
+
+            url = reverse('admin:telegram_parser_processedmessage_changelist')        ('Основная информация', {        ('Основная информация', {
+
+            return format_html(
+
+                '<a href="{}?keyword_group__id__exact={}">{}</a>',            'fields': ('user', 'name', 'keywords', 'is_active')            'fields': ('user', 'name', 'keywords', 'is_active')
+
+                url, obj.id, count
+
+            )        }),        }),
+
+        return count
+
+    messages_count.short_description = 'Сообщений'        ('AI настройки', {        ('AI настройки', {
+
+    
+
+    def get_queryset(self, request):            'fields': ('use_ai_filter', 'ai_prompt'),            'fields': ('use_ai_filter', 'ai_prompt'),
+
+        return super().get_queryset(request).annotate(
+
+            messages_count=Count('processed_messages')            'classes': ('collapse',)            'classes': ('collapse',)
+
+        )
 
         }),        }),
 
-        ('AI настройки', {        ('AI настройки', {
 
-            'fields': ('use_ai_filter', 'ai_prompt'),            'fields': ('use_ai_filter', 'ai_prompt'),
 
-            'classes': ('collapse',)            'classes': ('collapse',)
+@admin.register(MonitoredChat)        ('Метаданные', {        ('Метаданные', {
 
-        }),        }),
+class MonitoredChatAdmin(admin.ModelAdmin):
 
-        ('Метаданные', {        ('Метаданные', {
+    """Админка для мониторимых чатов"""            'fields': ('created_at', 'updated_at'),            'fields': ('created_at', 'updated_at'),
 
-            'fields': ('created_at', 'updated_at'),            'fields': ('created_at', 'updated_at'),
+    
 
-            'classes': ('collapse',)            'classes': ('collapse',)
+    list_display = [            'classes': ('collapse',)            'classes': ('collapse',)
 
-        }),        }),
+        'chat_name_display', 'user', 'chat_id', 'messages_count',
 
-    )    )
+        'is_active', 'last_message_at', 'added_at'        }),        }),
 
-        
+    ]
 
-    readonly_fields = ['created_at', 'updated_at']    readonly_fields = ['created_at', 'updated_at']
+    list_filter = ['is_active', 'added_at', 'last_message_at', 'user__subscription_plan']    )    )
 
-        
+    search_fields = ['chat_name', 'chat_username', 'user__username', 'chat_id']
 
-    def keywords_count(self, obj):    def keywords_count(self, obj):
+    list_select_related = ['user']        
 
-        return obj.keywords_count        return obj.keywords_count
+    
 
-    keywords_count.short_description = 'Ключевые слова'    keywords_count.short_description = 'Ключевые слова'
+    fieldsets = (    readonly_fields = ['created_at', 'updated_at']    readonly_fields = ['created_at', 'updated_at']
 
-        
+        ('Информация о чате', {
 
-    def messages_count(self, obj):    def messages_count(self, obj):
+            'fields': ('user', 'chat_id', 'chat_name', 'chat_username', 'invite_link')        
 
-        """Количество обработанных сообщений"""        """Количество обработанных сообщений"""
+        }),
 
-        count = obj.processed_messages.count()        count = obj.processed_messages.count()
+        ('Статус', {    def keywords_count(self, obj):    def keywords_count(self, obj):
 
-        if count > 0:        if count > 0:
+            'fields': ('is_active', 'last_message_at')
 
-            url = reverse('admin:telegram_parser_processedmessage_changelist')            url = reverse('admin:telegram_parser_processedmessage_changelist')
+        }),        return obj.keywords_count        return obj.keywords_count
 
-            return format_html(            return format_html(
+        ('Метаданные', {
 
-                '<a href="{}?keyword_group__id__exact={}">{}</a>',                '<a href="{}?keyword_group__id__exact={}">{}</a>',
+            'fields': ('added_at',),    keywords_count.short_description = 'Ключевые слова'    keywords_count.short_description = 'Ключевые слова'
 
-                url, obj.id, count                url, obj.id, count
+            'classes': ('collapse',)
 
-            )            )
+        }),        
 
-        return count        return count
+    )
 
-    messages_count.short_description = 'Сообщений'    messages_count.short_description = 'Сообщений'
+        def messages_count(self, obj):    def messages_count(self, obj):
 
-        
+    readonly_fields = ['added_at', 'last_message_at']
+
+            """Количество обработанных сообщений"""        """Количество обработанных сообщений"""
+
+    def chat_name_display(self, obj):
+
+        """Отображение названия чата с иконкой"""        count = obj.processed_messages.count()        count = obj.processed_messages.count()
+
+        icon = "🟢" if obj.is_active else "🔴"
+
+        name = obj.chat_name or f"Chat {obj.chat_id}"        if count > 0:        if count > 0:
+
+        if obj.chat_username:
+
+            return format_html('{} {} (@{})', icon, name, obj.chat_username)            url = reverse('admin:telegram_parser_processedmessage_changelist')            url = reverse('admin:telegram_parser_processedmessage_changelist')
+
+        return format_html('{} {}', icon, name)
+
+    chat_name_display.short_description = 'Чат'            return format_html(            return format_html(
+
+    
+
+    def messages_count(self, obj):                '<a href="{}?keyword_group__id__exact={}">{}</a>',                '<a href="{}?keyword_group__id__exact={}">{}</a>',
+
+        """Количество сообщений из чата"""
+
+        count = obj.processed_messages.count()                url, obj.id, count                url, obj.id, count
+
+        if count > 0:
+
+            url = reverse('admin:telegram_parser_processedmessage_changelist')            )            )
+
+            return format_html(
+
+                '<a href="{}?monitored_chat__id__exact={}">{}</a>',        return count        return count
+
+                url, obj.id, count
+
+            )    messages_count.short_description = 'Сообщений'    messages_count.short_description = 'Сообщений'
+
+        return count
+
+    messages_count.short_description = 'Сообщений'        
+
+
 
     def get_queryset(self, request):    def get_queryset(self, request):
 
-        return super().get_queryset(request).annotate(        return super().get_queryset(request).annotate(
+@admin.register(ProcessedMessage)
 
-            messages_count=Count('processed_messages')            messages_count=Count('processed_messages')
+class ProcessedMessageAdmin(admin.ModelAdmin):        return super().get_queryset(request).annotate(        return super().get_queryset(request).annotate(
 
-        )        )
+    """Админка для обработанных сообщений"""
 
+                messages_count=Count('processed_messages')            messages_count=Count('processed_messages')
 
+    list_display = [
 
+        'message_id', 'user', 'sender_name_display', 'short_text',        )        )
 
+        'matched_keywords_display', 'status_flags', 'notification_sent', 'processed_at'
 
-@admin.register(MonitoredChat)@admin.register(MonitoredChat)
+    ]
 
-class MonitoredChatAdmin(admin.ModelAdmin):class MonitoredChatAdmin(admin.ModelAdmin):
+    list_filter = [
 
-    """Админка для мониторимых чатов"""    """Админка для мониторимых чатов"""
+        'notification_sent', 'quality_status', 
+
+        'dialog_started', 'sale_made', 'processed_at',
+
+        'user__subscription_plan'@admin.register(MonitoredChat)@admin.register(MonitoredChat)
+
+    ]
+
+    search_fields = [class MonitoredChatAdmin(admin.ModelAdmin):class MonitoredChatAdmin(admin.ModelAdmin):
+
+        'message_text', 'sender_name', 'sender_username', 
+
+        'user__username', 'matched_keywords'    """Админка для мониторимых чатов"""    """Админка для мониторимых чатов"""
+
+    ]
+
+    list_select_related = ['user', 'keyword_group', 'monitored_chat', 'global_chat']        
+
+    date_hierarchy = 'processed_at'
+
+        list_display = [    list_display = [
+
+    fieldsets = (
+
+        ('Информация о сообщении', {        'chat_name_display', 'user', 'chat_id', 'messages_count',        'chat_name_display', 'user', 'chat_id', 'messages_count',
+
+            'fields': (
+
+                'user', 'keyword_group', 'global_chat', 'monitored_chat',        'is_active', 'last_message_at', 'added_at'        'is_active', 'last_message_at', 'added_at'
+
+                'message_id', 'chat_id', 'message_link'
+
+            )    ]    ]
+
+        }),
+
+        ('Отправитель', {    list_filter = ['is_active', 'added_at', 'last_message_at', 'user__subscription_plan']    list_filter = ['is_active', 'added_at', 'last_message_at', 'user__subscription_plan']
+
+            'fields': ('sender_id', 'sender_name', 'sender_username')
+
+        }),    search_fields = ['chat_name', 'chat_username', 'user__username', 'chat_id']    search_fields = ['chat_name', 'chat_username', 'user__username', 'chat_id']
+
+        ('Содержимое', {
+
+            'fields': ('message_text',)    list_select_related = ['user']    list_select_related = ['user']
+
+        }),
+
+        ('Результаты анализа', {        
+
+            'fields': ('matched_keywords', 'ai_result', 'ai_score')
+
+        }),    fieldsets = (    fieldsets = (
+
+        ('Статусы', {
+
+            'fields': (        ('Информация о чате', {        ('Информация о чате', {
+
+                'notification_sent', 'quality_status',
+
+                'dialog_started', 'sale_made', 'telegram_message_id'            'fields': ('user', 'chat_id', 'chat_name', 'chat_username', 'invite_link')            'fields': ('user', 'chat_id', 'chat_name', 'chat_username', 'invite_link')
+
+            )
+
+        }),        }),        }),
+
+        ('Дополнительно', {
+
+            'fields': ('notes',),        ('Статус', {        ('Статус', {
+
+            'classes': ('collapse',)
+
+        }),            'fields': ('is_active', 'last_message_at')            'fields': ('is_active', 'last_message_at')
+
+        ('Метаданные', {
+
+            'fields': ('processed_at', 'updated_at'),        }),        }),
+
+            'classes': ('collapse',)
+
+        }),        ('Метаданные', {        ('Метаданные', {
+
+    )
+
+                'fields': ('added_at',),            'fields': ('added_at',),
+
+    readonly_fields = ['processed_at', 'updated_at']
+
+                'classes': ('collapse',)            'classes': ('collapse',)
+
+    # Действия
+
+    actions = ['mark_as_qualified', 'mark_as_unqualified', 'mark_dialog_started']        }),        }),
+
+    
+
+    def sender_name_display(self, obj):    )    )
+
+        """Отображение отправителя"""
+
+        if obj.sender_username:        
+
+            return format_html('{} (@{})', obj.sender_name, obj.sender_username)
+
+        return obj.sender_name or 'Неизвестно'    readonly_fields = ['added_at', 'last_message_at']    readonly_fields = ['added_at', 'last_message_at']
+
+    sender_name_display.short_description = 'Отправитель'
+
+            
+
+    def short_text(self, obj):
+
+        """Сокращенный текст сообщения"""    def chat_name_display(self, obj):    def chat_name_display(self, obj):
+
+        return obj.short_message_text
+
+    short_text.short_description = 'Сообщение'        """Отображение названия чата с иконкой"""        """Отображение названия чата с иконкой"""
+
+    
+
+    def matched_keywords_display(self, obj):        icon = "🟢" if obj.is_active else "🔴"        icon = "🟢" if obj.is_active else "🔴"
+
+        """Отображение найденных ключевых слов"""
+
+        keywords = obj.matched_keywords_display        name = obj.chat_name or f"Chat {obj.chat_id}"        name = obj.chat_name or f"Chat {obj.chat_id}"
+
+        if len(keywords) > 50:
+
+            return keywords[:50] + "..."        if obj.chat_username:        if obj.chat_username:
+
+        return keywords
+
+    matched_keywords_display.short_description = 'Ключевые слова'            return format_html('{} {} (@{})', icon, name, obj.chat_username)            return format_html('{} {} (@{})', icon, name, obj.chat_username)
+
+    
+
+    def status_flags(self, obj):        return format_html('{} {}', icon, name)        return format_html('{} {}', icon, name)
+
+        """Флаги статуса"""
+
+        flags = []    chat_name_display.short_description = 'Чат'    chat_name_display.short_description = 'Чат'
+
+        if obj.quality_status == 'qualified':
+
+            flags.append("⭐ Квалифицирован")        
+
+        elif obj.quality_status == 'unqualified':
+
+            flags.append("❌ Неквалифицирован")    def messages_count(self, obj):    def messages_count(self, obj):
+
+        elif obj.quality_status == 'spam':
+
+            flags.append("🚫 Спам")        """Количество сообщений из чата"""        """Количество сообщений из чата"""
+
+        if obj.dialog_started:
+
+            flags.append("💬 Диалог")        count = obj.processed_messages.count()        count = obj.processed_messages.count()
+
+        if obj.sale_made:
+
+            flags.append("💰 Продажа")        if count > 0:        if count > 0:
 
         
 
-    list_display = [    list_display = [
+        return " | ".join(flags) if flags else "—"            url = reverse('admin:telegram_parser_processedmessage_changelist')            url = reverse('admin:telegram_parser_processedmessage_changelist')
 
-        'chat_name_display', 'user', 'chat_id', 'messages_count',        'chat_name_display', 'user', 'chat_id', 'messages_count',
+    status_flags.short_description = 'Статус'
 
-        'is_active', 'last_message_at', 'added_at'        'is_active', 'last_message_at', 'added_at'
+                return format_html(            return format_html(
 
-    ]    ]
+    # Actions
 
-    list_filter = ['is_active', 'added_at', 'last_message_at', 'user__subscription_plan']    list_filter = ['is_active', 'added_at', 'last_message_at', 'user__subscription_plan']
+    def mark_as_qualified(self, request, queryset):                '<a href="{}?monitored_chat__id__exact={}">{}</a>',                '<a href="{}?monitored_chat__id__exact={}">{}</a>',
 
-    search_fields = ['chat_name', 'chat_username', 'user__username', 'chat_id']    search_fields = ['chat_name', 'chat_username', 'user__username', 'chat_id']
+        """Отметить как квалифицированные"""
 
-    list_select_related = ['user']    list_select_related = ['user']
+        updated = queryset.update(quality_status='qualified')                url, obj.id, count                url, obj.id, count
 
-        
+        self.message_user(request, f"Отмечено как квалифицированные: {updated} сообщений")
 
-    fieldsets = (    fieldsets = (
+    mark_as_qualified.short_description = "Отметить как квалифицированные"            )            )
 
-        ('Информация о чате', {        ('Информация о чате', {
+    
 
-            'fields': ('user', 'chat_id', 'chat_name', 'chat_username', 'invite_link')            'fields': ('user', 'chat_id', 'chat_name', 'chat_username', 'invite_link')
+    def mark_as_unqualified(self, request, queryset):        return count        return count
 
-        }),        }),
+        """Отметить как неквалифицированные"""
 
-        ('Статус', {        ('Статус', {
+        updated = queryset.update(quality_status='unqualified')    messages_count.short_description = 'Сообщений'    messages_count.short_description = 'Сообщений'
 
-            'fields': ('is_active', 'last_message_at')            'fields': ('is_active', 'last_message_at')
+        self.message_user(request, f"Отмечено как неквалифицированные: {updated} сообщений")
 
-        }),        }),
+    mark_as_unqualified.short_description = "Отметить как неквалифицированные"
 
-        ('Метаданные', {        ('Метаданные', {
+    
 
-            'fields': ('added_at',),            'fields': ('added_at',),
+    def mark_dialog_started(self, request, queryset):
 
-            'classes': ('collapse',)            'classes': ('collapse',)
+        """Отметить что диалог начат"""
 
-        }),        }),
+        updated = queryset.update(dialog_started=True)@admin.register(ProcessedMessage)@admin.register(ProcessedMessage)
 
-    )    )
+        self.message_user(request, f"Отмечено что диалог начат: {updated} сообщений")
 
-        
-
-    readonly_fields = ['added_at', 'last_message_at']    readonly_fields = ['added_at', 'last_message_at']
-
-        
-
-    def chat_name_display(self, obj):    def chat_name_display(self, obj):
-
-        """Отображение названия чата с иконкой"""        """Отображение названия чата с иконкой"""
-
-        icon = "🟢" if obj.is_active else "🔴"        icon = "🟢" if obj.is_active else "🔴"
-
-        name = obj.chat_name or f"Chat {obj.chat_id}"        name = obj.chat_name or f"Chat {obj.chat_id}"
-
-        if obj.chat_username:        if obj.chat_username:
-
-            return format_html('{} {} (@{})', icon, name, obj.chat_username)            return format_html('{} {} (@{})', icon, name, obj.chat_username)
-
-        return format_html('{} {}', icon, name)        return format_html('{} {}', icon, name)
-
-    chat_name_display.short_description = 'Чат'    chat_name_display.short_description = 'Чат'
-
-        
-
-    def messages_count(self, obj):    def messages_count(self, obj):
-
-        """Количество сообщений из чата"""        """Количество сообщений из чата"""
-
-        count = obj.processed_messages.count()        count = obj.processed_messages.count()
-
-        if count > 0:        if count > 0:
-
-            url = reverse('admin:telegram_parser_processedmessage_changelist')            url = reverse('admin:telegram_parser_processedmessage_changelist')
-
-            return format_html(            return format_html(
-
-                '<a href="{}?monitored_chat__id__exact={}">{}</a>',                '<a href="{}?monitored_chat__id__exact={}">{}</a>',
-
-                url, obj.id, count                url, obj.id, count
-
-            )            )
-
-        return count        return count
-
-    messages_count.short_description = 'Сообщений'    messages_count.short_description = 'Сообщений'
+    mark_dialog_started.short_description = "Отметить что диалог начат"class ProcessedMessageAdmin(admin.ModelAdmin):class ProcessedMessageAdmin(admin.ModelAdmin):
 
 
-
-
-
-@admin.register(ProcessedMessage)@admin.register(ProcessedMessage)
-
-class ProcessedMessageAdmin(admin.ModelAdmin):class ProcessedMessageAdmin(admin.ModelAdmin):
 
     """Админка для обработанных сообщений"""    """Админка для обработанных сообщений"""
 
-        
+@admin.register(BotStatus)
 
-    list_display = [    list_display = [
+class BotStatusAdmin(admin.ModelAdmin):        
 
-        'message_id', 'user', 'sender_name_display', 'short_text',        'message_id', 'user', 'sender_name_display', 'short_text',
+    """Админка для статуса бота"""
 
-        'matched_keywords_display', 'status_flags', 'notification_sent', 'processed_at'        'matched_keywords_display', 'status_flags', 'notification_sent', 'processed_at'
+        list_display = [    list_display = [
 
-    ]    ]
+    list_display = [
 
-    list_filter = [    list_filter = [
+        'bot_username', 'status_display', 'uptime_display',        'message_id', 'user', 'sender_name_display', 'short_text',        'message_id', 'user', 'sender_name_display', 'short_text',
 
-        'notification_sent', 'quality_status',         'notification_sent', 'quality_status', 
+        'total_chats_monitored', 'total_users', 'messages_processed_today',
 
-        'dialog_started', 'sale_made', 'processed_at',        'dialog_started', 'sale_made', 'processed_at',
+        'last_heartbeat'        'matched_keywords_display', 'status_flags', 'notification_sent', 'processed_at'        'matched_keywords_display', 'status_flags', 'notification_sent', 'processed_at'
 
-        'user__subscription_plan'        'user__subscription_plan'
+    ]
 
-    ]    ]
+        ]    ]
 
-    search_fields = [    search_fields = [
+    fieldsets = (
 
-        'message_text', 'sender_name', 'sender_username',         'message_text', 'sender_name', 'sender_username', 
+        ('Статус бота', {    list_filter = [    list_filter = [
 
-        'user__username', 'matched_keywords'        'user__username', 'matched_keywords'
+            'fields': ('bot_username', 'is_running', 'last_heartbeat', 'started_at')
 
-    ]    ]
+        }),        'notification_sent', 'quality_status',         'notification_sent', 'quality_status', 
 
-    list_select_related = ['user', 'keyword_group', 'monitored_chat', 'global_chat']    list_select_related = ['user', 'keyword_group', 'monitored_chat', 'global_chat']
+        ('Статистика', {
 
-    date_hierarchy = 'processed_at'    date_hierarchy = 'processed_at'
+            'fields': (        'dialog_started', 'sale_made', 'processed_at',        'dialog_started', 'sale_made', 'processed_at',
 
-        
+                'total_chats_monitored', 'total_users',
 
-    fieldsets = (    fieldsets = (
+                'messages_processed_today', 'messages_processed_total'        'user__subscription_plan'        'user__subscription_plan'
 
-        ('Информация о сообщении', {        ('Информация о сообщении', {
+            )
 
-            'fields': (            'fields': (
+        }),    ]    ]
 
-                'user', 'keyword_group', 'global_chat', 'monitored_chat',                'user', 'keyword_group', 'global_chat', 'monitored_chat',
+        ('Ошибки', {
 
-                'message_id', 'chat_id', 'message_link'                'message_id', 'chat_id', 'message_link'
+            'fields': ('errors_count', 'last_error', 'last_error_at'),    search_fields = [    search_fields = [
 
-            )            )
+            'classes': ('collapse',)
 
-        }),        }),
+        }),        'message_text', 'sender_name', 'sender_username',         'message_text', 'sender_name', 'sender_username', 
+
+    )
+
+            'user__username', 'matched_keywords'        'user__username', 'matched_keywords'
+
+    readonly_fields = ['last_heartbeat']
+
+        ]    ]
+
+    def status_display(self, obj):
+
+        """Отображение статуса с цветом"""    list_select_related = ['user', 'keyword_group', 'monitored_chat', 'global_chat']    list_select_related = ['user', 'keyword_group', 'monitored_chat', 'global_chat']
+
+        if obj.is_running:
+
+            health = "🟢 Здоров" if obj.is_healthy else "🟡 Проблемы"    date_hierarchy = 'processed_at'    date_hierarchy = 'processed_at'
+
+            return format_html('🟢 Работает ({})', health)
+
+        return "🔴 Остановлен"        
+
+    status_display.short_description = 'Статус'
+
+        fieldsets = (    fieldsets = (
+
+    def uptime_display(self, obj):
+
+        """Отображение времени работы"""        ('Информация о сообщении', {        ('Информация о сообщении', {
+
+        return obj.uptime
+
+    uptime_display.short_description = 'Время работы'            'fields': (            'fields': (
+
+    
+
+    def has_add_permission(self, request):                'user', 'keyword_group', 'global_chat', 'monitored_chat',                'user', 'keyword_group', 'global_chat', 'monitored_chat',
+
+        """Запрещаем создание нескольких записей статуса"""
+
+        return not BotStatus.objects.exists()                'message_id', 'chat_id', 'message_link'                'message_id', 'chat_id', 'message_link'
+
+    
+
+    def has_delete_permission(self, request, obj=None):            )            )
+
+        """Запрещаем удаление статуса"""
+
+        return False        }),        }),
+
+
 
         ('Отправитель', {        ('Отправитель', {
 
-            'fields': ('sender_id', 'sender_name', 'sender_username')            'fields': ('sender_id', 'sender_name', 'sender_username')
+@admin.register(GlobalChat)
+
+class GlobalChatAdmin(admin.ModelAdmin):            'fields': ('sender_id', 'sender_name', 'sender_username')            'fields': ('sender_id', 'sender_name', 'sender_username')
+
+    """Админка для глобальных чатов"""
+
+            }),        }),
+
+    list_display = [
+
+        'chat_id', 'name', 'enabled_users', 'invite_link_display',         ('Содержимое', {        ('Содержимое', {
+
+        'is_active', 'created_at'
+
+    ]            'fields': ('message_text',)            'fields': ('message_text',)
+
+    list_filter = ['is_active', 'created_at']
+
+    search_fields = ['name', 'chat_id']        }),        }),
+
+    readonly_fields = ['created_at', 'updated_at']
+
+            ('Результаты анализа', {        ('Результаты анализа', {
+
+    fieldsets = (
+
+        ('Информация о чате', {            'fields': ('matched_keywords', 'ai_result', 'ai_score')            'fields': ('matched_keywords', 'ai_result', 'ai_score')
+
+            'fields': ('chat_id', 'name', 'invite_link', 'is_active')
+
+        }),        }),        }),
+
+        ('Метаданные', {
+
+            'fields': ('created_at', 'updated_at'),        ('Статусы', {        ('Статусы', {
+
+            'classes': ('collapse',)
+
+        }),            'fields': (            'fields': (
+
+    )
+
+                    'notification_sent', 'quality_status',                'notification_sent', 'quality_status',
+
+    def invite_link_display(self, obj):
+
+        """Отображение ссылки на чат"""                'dialog_started', 'sale_made', 'telegram_message_id'                'dialog_started', 'sale_made', 'telegram_message_id'
+
+        if obj.invite_link:
+
+            return format_html(            )            )
+
+                '<a href="{}" target="_blank">Открыть <i class="fas fa-external-link-alt"></i></a>',
+
+                obj.invite_link        }),        }),
+
+            )
+
+        return '—'        ('Дополнительно', {        ('Дополнительно', {
+
+    invite_link_display.short_description = 'Ссылка'
+
+                'fields': ('notes',),            'fields': ('notes',),
+
+    def enabled_users(self, obj):
+
+        """Количество пользователей с включенным чатом"""            'classes': ('collapse',)            'classes': ('collapse',)
+
+        count = obj.get_enabled_users_count()
+
+        if count > 0:        }),        }),
+
+            url = reverse('admin:telegram_parser_userchatsettings_changelist')
+
+            return format_html(        ('Метаданные', {        ('Метаданные', {
+
+                '<a href="{}?global_chat__id__exact={}&is_enabled__exact=1">{} 👥</a>',
+
+                url, obj.id, count            'fields': ('processed_at', 'updated_at'),            'fields': ('processed_at', 'updated_at'),
+
+            )
+
+        return '0 👥'            'classes': ('collapse',)            'classes': ('collapse',)
+
+    enabled_users.short_description = 'Активных пользователей'
 
         }),        }),
 
-        ('Содержимое', {        ('Содержимое', {
 
-            'fields': ('message_text',)            'fields': ('message_text',)
 
-        }),        }),
+@admin.register(UserChatSettings)    )    )
 
-        ('Результаты анализа', {        ('Результаты анализа', {
+class UserChatSettingsAdmin(admin.ModelAdmin):
 
-            'fields': ('matched_keywords', 'ai_result', 'ai_score')            'fields': ('matched_keywords', 'ai_result', 'ai_score')
+    """Админка для настроек чатов пользователей"""        
 
-        }),        }),
+    
 
-        ('Статусы', {        ('Статусы', {
+    list_display = [    readonly_fields = ['processed_at', 'updated_at']    readonly_fields = ['processed_at', 'updated_at']
 
-            'fields': (            'fields': (
+        'user', 'global_chat', 'is_enabled_display', 
 
-                'notification_sent', 'quality_status',                'notification_sent', 'quality_status',
+        'enabled_at', 'disabled_at'        
 
-                'dialog_started', 'sale_made', 'telegram_message_id'                'dialog_started', 'sale_made', 'telegram_message_id'
+    ]
 
-            )            )
+    list_filter = ['is_enabled', 'enabled_at', 'disabled_at']    # Действия    # Действия
 
-        }),        }),
+    search_fields = ['user__username', 'global_chat__name']
 
-        ('Дополнительно', {        ('Дополнительно', {
+    list_select_related = ['user', 'global_chat']    actions = ['mark_as_qualified', 'mark_as_unqualified', 'mark_dialog_started']    actions = ['mark_as_qualified', 'mark_as_unqualified', 'mark_dialog_started']
 
-            'fields': ('notes',),            'fields': ('notes',),
+    readonly_fields = ['enabled_at', 'disabled_at']
 
-            'classes': ('collapse',)            'classes': ('collapse',)
+            
 
-        }),        }),
+    fieldsets = (
 
-        ('Метаданные', {        ('Метаданные', {
+        ('Настройка', {    def sender_name_display(self, obj):    def sender_name_display(self, obj):
 
-            'fields': ('processed_at', 'updated_at'),            'fields': ('processed_at', 'updated_at'),
+            'fields': ('user', 'global_chat', 'is_enabled')
 
-            'classes': ('collapse',)            'classes': ('collapse',)
+        }),        """Отображение отправителя"""        """Отображение отправителя"""
 
-        }),        }),
+        ('Метаданные', {
 
-    )    )
+            'fields': ('enabled_at', 'disabled_at'),        if obj.sender_username:        if obj.sender_username:
 
-        
+            'classes': ('collapse',)
 
-    readonly_fields = ['processed_at', 'updated_at']    readonly_fields = ['processed_at', 'updated_at']
+        }),            return format_html('{} (@{})', obj.sender_name, obj.sender_username)            return format_html('{} (@{})', obj.sender_name, obj.sender_username)
 
-        
+    )
 
-    # Действия    # Действия
+            return obj.sender_name or 'Неизвестно'        return obj.sender_name or 'Неизвестно'
 
-    actions = ['mark_as_qualified', 'mark_as_unqualified', 'mark_dialog_started']    actions = ['mark_as_qualified', 'mark_as_unqualified', 'mark_dialog_started']
+    def is_enabled_display(self, obj):
 
-        
+        """Отображение статуса включения"""    sender_name_display.short_description = 'Отправитель'    sender_name_display.short_description = 'Отправитель'
 
-    def sender_name_display(self, obj):    def sender_name_display(self, obj):
+        if obj.is_enabled:
 
-        """Отображение отправителя"""        """Отображение отправителя"""
+            return format_html('<span style="color: green;">✅ Включен</span>')        
 
-        if obj.sender_username:        if obj.sender_username:
+        return format_html('<span style="color: red;">❌ Выключен</span>')
 
-            return format_html('{} (@{})', obj.sender_name, obj.sender_username)            return format_html('{} (@{})', obj.sender_name, obj.sender_username)
+    is_enabled_display.short_description = 'Статус'    def short_text(self, obj):    def short_text(self, obj):
 
-        return obj.sender_name or 'Неизвестно'        return obj.sender_name or 'Неизвестно'
 
-    sender_name_display.short_description = 'Отправитель'    sender_name_display.short_description = 'Отправитель'
-
-        
-
-    def short_text(self, obj):    def short_text(self, obj):
 
         """Сокращенный текст сообщения"""        """Сокращенный текст сообщения"""
 
-        return obj.short_message_text        return obj.short_message_text
+@admin.register(ChatRequest)
 
-    short_text.short_description = 'Сообщение'    short_text.short_description = 'Сообщение'
+class ChatRequestAdmin(admin.ModelAdmin):        return obj.short_message_text        return obj.short_message_text
 
-        
+    """Админка для заявок на добавление чатов"""
 
-    def matched_keywords_display(self, obj):    def matched_keywords_display(self, obj):
+        short_text.short_description = 'Сообщение'    short_text.short_description = 'Сообщение'
 
-        """Отображение найденных ключевых слов"""        """Отображение найденных ключевых слов"""
+    list_display = [
 
-        keywords = obj.matched_keywords_display        keywords = obj.matched_keywords_display
+        'id', 'user', 'chat_link_short', 'status_display',         
 
-        if len(keywords) > 50:        if len(keywords) > 50:
+        'created_at', 'processed_at'
 
-            return keywords[:50] + "..."            return keywords[:50] + "..."
+    ]    def matched_keywords_display(self, obj):    def matched_keywords_display(self, obj):
 
-        return keywords        return keywords
+    list_filter = ['status', 'created_at', 'processed_at']
 
-    matched_keywords_display.short_description = 'Ключевые слова'    matched_keywords_display.short_description = 'Ключевые слова'
+    search_fields = ['user__username', 'user__email', 'chat_link', 'chat_description']        """Отображение найденных ключевых слов"""        """Отображение найденных ключевых слов"""
 
-        
+    list_select_related = ['user', 'global_chat']
 
-    def status_flags(self, obj):    def status_flags(self, obj):
+    readonly_fields = ['created_at', 'processed_at']        keywords = obj.matched_keywords_display        keywords = obj.matched_keywords_display
 
-        """Флаги статуса"""        """Флаги статуса"""
+    
 
-        flags = []        flags = []
+    fieldsets = (        if len(keywords) > 50:        if len(keywords) > 50:
 
-        if obj.quality_status == 'qualified':        if obj.quality_status == 'qualified':
+        ('Информация о заявке', {
 
-            flags.append("⭐ Квалифицирован")            flags.append("⭐ Квалифицирован")
+            'fields': ('user', 'chat_link', 'chat_description')            return keywords[:50] + "..."            return keywords[:50] + "..."
 
-        elif obj.quality_status == 'unqualified':        elif obj.quality_status == 'unqualified':
+        }),
 
-            flags.append("❌ Неквалифицирован")            flags.append("❌ Неквалифицирован")
+        ('Обработка', {        return keywords        return keywords
 
-        elif obj.quality_status == 'spam':        elif obj.quality_status == 'spam':
+            'fields': ('status', 'admin_comment', 'global_chat', 'processed_at')
 
-            flags.append("🚫 Спам")            flags.append("🚫 Спам")
+        }),    matched_keywords_display.short_description = 'Ключевые слова'    matched_keywords_display.short_description = 'Ключевые слова'
 
-        if obj.dialog_started:        if obj.dialog_started:
+        ('Метаданные', {
 
-            flags.append("💬 Диалог")            flags.append("💬 Диалог")
+            'fields': ('created_at',),        
 
-        if obj.sale_made:        if obj.sale_made:
+            'classes': ('collapse',)
 
-            flags.append("💰 Продажа")            flags.append("💰 Продажа")
+        }),    def status_flags(self, obj):    def status_flags(self, obj):
 
-                
+    )
 
-        return " | ".join(flags) if flags else "—"        return " | ".join(flags) if flags else "—"
+            """Флаги статуса"""        """Флаги статуса"""
 
-    status_flags.short_description = 'Статус'    status_flags.short_description = 'Статус'
+    actions = ['approve_requests', 'reject_requests']
 
-        
+            flags = []        flags = []
 
-    # Actions    # Actions
+    def chat_link_short(self, obj):
 
-    def mark_as_qualified(self, request, queryset):    def mark_as_qualified(self, request, queryset):
+        """Сокращенная ссылка на чат"""        if obj.quality_status == 'qualified':        if obj.quality_status == 'qualified':
 
-        """Отметить как квалифицированные"""        """Отметить как квалифицированные"""
+        if len(obj.chat_link) > 50:
 
-        updated = queryset.update(quality_status='qualified')        updated = queryset.update(quality_status='qualified')
+            return obj.chat_link[:50] + "..."            flags.append("⭐ Квалифицирован")            flags.append("⭐ Квалифицирован")
 
-        self.message_user(request, f"Отмечено как квалифицированные: {updated} сообщений")        self.message_user(request, f"Отмечено как квалифицированные: {updated} сообщений")
+        return obj.chat_link
 
-    mark_as_qualified.short_description = "Отметить как квалифицированные"    mark_as_qualified.short_description = "Отметить как квалифицированные"
+    chat_link_short.short_description = 'Ссылка на чат'        elif obj.quality_status == 'unqualified':        elif obj.quality_status == 'unqualified':
 
-        
+    
 
-    def mark_as_unqualified(self, request, queryset):    def mark_as_unqualified(self, request, queryset):
+    def status_display(self, obj):            flags.append("❌ Неквалифицирован")            flags.append("❌ Неквалифицирован")
 
-        """Отметить как неквалифицированные"""        """Отметить как неквалифицированные"""
+        """Цветное отображение статуса"""
 
-        updated = queryset.update(quality_status='unqualified')        updated = queryset.update(quality_status='unqualified')
+        colors = {        elif obj.quality_status == 'spam':        elif obj.quality_status == 'spam':
 
-        self.message_user(request, f"Отмечено как неквалифицированные: {updated} сообщений")        self.message_user(request, f"Отмечено как неквалифицированные: {updated} сообщений")
+            'pending': 'orange',
+
+            'approved': 'green',            flags.append("🚫 Спам")            flags.append("🚫 Спам")
+
+            'rejected': 'red'
+
+        }        if obj.dialog_started:        if obj.dialog_started:
+
+        icons = {
+
+            'pending': '⏳',            flags.append("💬 Диалог")            flags.append("💬 Диалог")
+
+            'approved': '✅',
+
+            'rejected': '❌'        if obj.sale_made:        if obj.sale_made:
+
+        }
+
+        color = colors.get(obj.status, 'gray')            flags.append("💰 Продажа")            flags.append("💰 Продажа")
+
+        icon = icons.get(obj.status, '❓')
+
+        return format_html(                
+
+            '<span style="color: {};">{} {}</span>',
+
+            color, icon, obj.get_status_display()        return " | ".join(flags) if flags else "—"        return " | ".join(flags) if flags else "—"
+
+        )
+
+    status_display.short_description = 'Статус'    status_flags.short_description = 'Статус'    status_flags.short_description = 'Статус'
+
+    
+
+    def approve_requests(self, request, queryset):        
+
+        """Одобрить заявки"""
+
+        from django.utils import timezone    # Actions    # Actions
+
+        updated = 0
+
+        for req in queryset.filter(status='pending'):    def mark_as_qualified(self, request, queryset):    def mark_as_qualified(self, request, queryset):
+
+            req.status = 'approved'
+
+            req.processed_at = timezone.now()        """Отметить как квалифицированные"""        """Отметить как квалифицированные"""
+
+            req.save()
+
+            updated += 1        updated = queryset.update(quality_status='qualified')        updated = queryset.update(quality_status='qualified')
+
+        self.message_user(request, f"Одобрено заявок: {updated}")
+
+    approve_requests.short_description = "✅ Одобрить выбранные заявки"        self.message_user(request, f"Отмечено как квалифицированные: {updated} сообщений")        self.message_user(request, f"Отмечено как квалифицированные: {updated} сообщений")
+
+    
+
+    def reject_requests(self, request, queryset):    mark_as_qualified.short_description = "Отметить как квалифицированные"    mark_as_qualified.short_description = "Отметить как квалифицированные"
+
+        """Отклонить заявки"""
+
+        from django.utils import timezone        
+
+        updated = 0
+
+        for req in queryset.filter(status='pending'):    def mark_as_unqualified(self, request, queryset):    def mark_as_unqualified(self, request, queryset):
+
+            req.status = 'rejected'
+
+            req.processed_at = timezone.now()        """Отметить как неквалифицированные"""        """Отметить как неквалифицированные"""
+
+            req.save()
+
+            updated += 1        updated = queryset.update(quality_status='unqualified')        updated = queryset.update(quality_status='unqualified')
+
+        self.message_user(request, f"Отклонено заявок: {updated}")
+
+    reject_requests.short_description = "❌ Отклонить выбранные заявки"        self.message_user(request, f"Отмечено как неквалифицированные: {updated} сообщений")        self.message_user(request, f"Отмечено как неквалифицированные: {updated} сообщений")
+
+
 
     mark_as_unqualified.short_description = "Отметить как неквалифицированные"    mark_as_unqualified.short_description = "Отметить как неквалифицированные"
 
-        
+@admin.register(MessageTemplate)
 
-    def mark_dialog_started(self, request, queryset):    def mark_dialog_started(self, request, queryset):
+class MessageTemplateAdmin(admin.ModelAdmin):        
 
-        """Отметить что диалог начат"""        """Отметить что диалог начат"""
+    """Админка для шаблонов сообщений"""
 
-        updated = queryset.update(dialog_started=True)        updated = queryset.update(dialog_started=True)
+        def mark_dialog_started(self, request, queryset):    def mark_dialog_started(self, request, queryset):
 
-        self.message_user(request, f"Отмечено что диалог начат: {updated} сообщений")        self.message_user(request, f"Отмечено что диалог начат: {updated} сообщений")
+    list_display = [
 
-    mark_dialog_started.short_description = "Отметить что диалог начат"    mark_dialog_started.short_description = "Отметить что диалог начат"
+        'name', 'user', 'subject', 'is_default',         """Отметить что диалог начат"""        """Отметить что диалог начат"""
+
+        'is_active', 'created_at', 'updated_at'
+
+    ]        updated = queryset.update(dialog_started=True)        updated = queryset.update(dialog_started=True)
+
+    list_filter = ['is_default', 'is_active', 'created_at', 'user__subscription_plan']
+
+    search_fields = ['name', 'subject', 'template_text', 'user__username']        self.message_user(request, f"Отмечено что диалог начат: {updated} сообщений")        self.message_user(request, f"Отмечено что диалог начат: {updated} сообщений")
+
+    list_select_related = ['user']
+
+        mark_dialog_started.short_description = "Отметить что диалог начат"    mark_dialog_started.short_description = "Отметить что диалог начат"
+
+    fieldsets = (
+
+        ('Основная информация', {
+
+            'fields': ('user', 'name', 'subject', 'is_active', 'is_default')
+
+        }),
+
+        ('Содержание', {
+
+            'fields': ('template_text',)@admin.register(BotStatus)@admin.register(BotStatus)
+
+        }),
+
+        ('Метаданные', {class BotStatusAdmin(admin.ModelAdmin):class BotStatusAdmin(admin.ModelAdmin):
+
+            'fields': ('created_at', 'updated_at'),
+
+            'classes': ('collapse',)    """Админка для статуса бота"""    """Админка для статуса бота"""
+
+        }),
+
+    )        
+
+    
+
+    readonly_fields = ['created_at', 'updated_at']    list_display = [    list_display = [
 
 
-
-
-
-@admin.register(BotStatus)@admin.register(BotStatus)
-
-class BotStatusAdmin(admin.ModelAdmin):class BotStatusAdmin(admin.ModelAdmin):
-
-    """Админка для статуса бота"""    """Админка для статуса бота"""
-
-        
-
-    list_display = [    list_display = [
 
         'bot_username', 'status_display', 'uptime_display',        'bot_username', 'status_display', 'uptime_display',
 
-        'total_chats_monitored', 'total_users', 'messages_processed_today',        'total_chats_monitored', 'total_users', 'messages_processed_today',
+# Настройка админки
 
-        'last_heartbeat'        'last_heartbeat'
+admin.site.site_header = "Telegram Parser SaaS"        'total_chats_monitored', 'total_users', 'messages_processed_today',        'total_chats_monitored', 'total_users', 'messages_processed_today',
+
+admin.site.site_title = "Parser Admin"
+
+admin.site.index_title = "Панель управления Telegram Parser"        'last_heartbeat'        'last_heartbeat'
+
 
     ]    ]
 
