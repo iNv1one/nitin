@@ -64,7 +64,11 @@
     <div class="col-12">
         {% if page_obj %}
             {% for message in page_obj %}
-            <div class="card mb-3 message-row status-{{ message.quality_status }}">
+            <div class="card mb-3 message-row status-{{ message.quality_status }}"
+                 data-message-id="{{ message.id }}"
+                 data-username="{{ message.sender_username }}"
+                 data-chat-name="{% if message.global_chat %}{{ message.global_chat.name }}{% endif %}"
+                 data-message-text="{{ message.message_text|striptags }}">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-7">
@@ -77,7 +81,7 @@
                                 <i class="fas fa-tags"></i> {{ message.matched_keywords_display }} | 
                                 <i class="fas fa-clock"></i> {{ message.processed_at|date:"d.m.Y H:i" }}
                                 {% if message.global_chat %}
-                                    | 
+                    | 
                                     {% if message.global_chat.invite_link %}
                                         <i class="fas fa-comments"></i> <a href="{{ message.global_chat.invite_link }}" target="_blank" class="text-decoration-none">{{ message.global_chat.name }}</a>
                                     {% else %}
@@ -146,6 +150,75 @@
                 <i class="fas fa-info-circle"></i> Пока нет обработанных сообщений
             </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно для отправки сообщения -->
+<div class="modal fade" id="sendMessageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-paper-plane"></i> Отправить сообщение
+                    <span id="recipientName" class="text-muted"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="messageIdForSend">
+                
+                <!-- Выбор шаблона -->
+                <div class="mb-3">
+                    <label class="form-label">Выбрать шаблон</label>
+                    <select class="form-select" id="templateSelect" onchange="loadTemplate()">
+                        <option value="">-- Без шаблона --</option>
+                        {% for template in user.message_templates.all %}
+                        <option value="{{ template.id }}" {% if template.is_default %}selected{% endif %}>
+                            {{ template.name }}{% if template.subject %} - {{ template.subject }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">
+                        {% if user.message_templates.count == 0 %}
+                        <a href="{% url 'dashboard:message_templates' %}" target="_blank">
+                            Создать первый шаблон
+                        </a>
+                        {% else %}
+                        <a href="{% url 'dashboard:message_templates' %}" target="_blank">
+                            Управление шаблонами
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Текст сообщения -->
+                <div class="mb-3">
+                    <label for="messageTextInput" class="form-label">Текст сообщения <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="messageTextInput" rows="10" required
+                              placeholder="Введите текст сообщения..."></textarea>
+                    <div class="form-text">
+                        Доступные переменные: {name}, {username}, {chat_name}, {message_text}
+                    </div>
+                </div>
+                
+                <!-- Предпросмотр -->
+                <div id="previewSection" style="display: none;">
+                    <label class="form-label">Предпросмотр (с подстановкой переменных):</label>
+                    <div class="bg-light p-3 rounded">
+                        <pre id="messagePreview" class="mb-0" style="white-space: pre-wrap; font-family: inherit;"></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="previewMessage()">
+                    <i class="fas fa-eye"></i> Предпросмотр
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="sendMessageFromModal()">
+                    <i class="fas fa-paper-plane"></i> Отправить
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -239,6 +312,8 @@ function getCookie(name) {
 }
 
 // Функция для отправки сообщения
+let currentMessageData = {};
+
 function openSendMessageModal(messageId, senderName, alreadySent) {
     if (alreadySent) {
         if (!confirm('Сообщение уже было отправлено. Отправить еще раз?')) {
@@ -246,9 +321,71 @@ function openSendMessageModal(messageId, senderName, alreadySent) {
         }
     }
     
-    const messageText = prompt(`Введите текст сообщения для ${senderName}:`, '{% if user.default_message_template %}{{ user.default_message_template|escapejs }}{% endif %}');
+    // Сохраняем данные
+    document.getElementById('messageIdForSend').value = messageId;
+    document.getElementById('recipientName').textContent = `для ${senderName}`;
     
-    if (messageText === null || messageText.trim() === '') {
+    // Находим данные сообщения на странице для переменных
+    const messageCard = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (messageCard) {
+        currentMessageData = {
+            name: senderName,
+            username: messageCard.dataset.username || '',
+            chat_name: messageCard.dataset.chatName || '',
+            message_text: messageCard.dataset.messageText || ''
+        };
+    }
+    
+    // Загружаем дефолтный шаблон если есть
+    const templateSelect = document.getElementById('templateSelect');
+    if (templateSelect.value) {
+        loadTemplate();
+    }
+    
+    // Открываем модальное окно
+    const modal = new bootstrap.Modal(document.getElementById('sendMessageModal'));
+    modal.show();
+}
+
+function loadTemplate() {
+    const templateId = document.getElementById('templateSelect').value;
+    if (!templateId) {
+        document.getElementById('messageTextInput').value = '';
+        return;
+    }
+    
+    // Загружаем шаблон через AJAX
+    fetch(`/templates/${templateId}/get/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('messageTextInput').value = data.text;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading template:', error);
+        });
+}
+
+function previewMessage() {
+    const text = document.getElementById('messageTextInput').value;
+    let preview = text;
+    
+    // Заменяем переменные
+    for (const [key, value] of Object.entries(currentMessageData)) {
+        preview = preview.replace(new RegExp(`\\{${key}\\}`, 'g'), value || `{${key}}`);
+    }
+    
+    document.getElementById('messagePreview').textContent = preview;
+    document.getElementById('previewSection').style.display = 'block';
+}
+
+function sendMessageFromModal() {
+    const messageId = document.getElementById('messageIdForSend').value;
+    const messageText = document.getElementById('messageTextInput').value.trim();
+    
+    if (!messageText) {
+        alert('Введите текст сообщения');
         return;
     }
     
@@ -265,6 +402,7 @@ function openSendMessageModal(messageId, senderName, alreadySent) {
     .then(data => {
         if (data.success) {
             alert('Сообщение успешно отправлено!');
+            bootstrap.Modal.getInstance(document.getElementById('sendMessageModal')).hide();
             location.reload();
         } else {
             alert('Ошибка: ' + data.message);
@@ -277,4 +415,3 @@ function openSendMessageModal(messageId, senderName, alreadySent) {
 }
 </script>
 {% endblock %}
-

@@ -551,3 +551,80 @@ class RawMessage(models.Model):
     
     def __str__(self):
         return f"Message {self.message_id} from {self.chat_name} at {self.received_at}"
+
+
+class MessageTemplate(models.Model):
+    """Шаблоны сообщений для отправки лидам"""
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Пользователь",
+        related_name="message_templates"
+    )
+    name = models.CharField(
+        max_length=255,
+        verbose_name="Название шаблона",
+        help_text="Название для удобства (например, 'Первое касание', 'Повторное предложение')"
+    )
+    subject = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Тема/заголовок",
+        help_text="Краткое описание шаблона"
+    )
+    template_text = models.TextField(
+        verbose_name="Текст шаблона",
+        help_text="Используйте переменные: {name}, {username}, {chat_name}"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активен"
+    )
+    is_default = models.BooleanField(
+        default=False,
+        verbose_name="Использовать по умолчанию"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Создан"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Обновлен"
+    )
+    
+    class Meta:
+        verbose_name = "Шаблон сообщения"
+        verbose_name_plural = "Шаблоны сообщений"
+        ordering = ['-is_default', '-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.user.username})"
+    
+    def save(self, *args, **kwargs):
+        # Если этот шаблон становится дефолтным, убираем флаг у остальных
+        if self.is_default:
+            MessageTemplate.objects.filter(
+                user=self.user,
+                is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+    
+    def render(self, context: dict) -> str:
+        """
+        Рендерит шаблон с подстановкой переменных
+        
+        Args:
+            context: Словарь с переменными (name, username, chat_name и т.д.)
+            
+        Returns:
+            str: Отрендеренный текст
+        """
+        text = self.template_text
+        for key, value in context.items():
+            text = text.replace(f'{{{key}}}', str(value or ''))
+        return text

@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Шаблоны сообщений - Telegram Parser{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-file-alt"></i> Шаблоны сообщений</h2>
+                    <p class="text-muted">Создавайте шаблоны для быстрой отправки сообщений лидам</p>
+                </div>
+                <a href="{% url 'dashboard:create_message_template' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Создать шаблон
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row mb-3">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        {% if templates %}
+        {% for template in templates %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 {% if template.is_default %}border-primary{% endif %}">
+                <div class="card-header {% if template.is_default %}bg-primary text-white{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            {{ template.name }}
+                            {% if template.is_default %}
+                            <span class="badge bg-warning text-dark ms-2">По умолчанию</span>
+                            {% endif %}
+                        </h5>
+                        <div>
+                            <a href="{% url 'dashboard:edit_message_template' template.id %}" 
+                               class="btn btn-sm {% if template.is_default %}btn-light{% else %}btn-outline-primary{% endif %}" 
+                               title="Редактировать">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="post" 
+                                  action="{% url 'dashboard:delete_message_template' template.id %}" 
+                                  style="display: inline;"
+                                  onsubmit="return confirm('Удалить шаблон {{ template.name }}?')">
+                                {% csrf_token %}
+                                <button type="submit" 
+                                        class="btn btn-sm {% if template.is_default %}btn-light{% else %}btn-outline-danger{% endif %}" 
+                                        title="Удалить">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if template.subject %}
+                    <p class="text-muted mb-2"><strong>{{ template.subject }}</strong></p>
+                    {% endif %}
+                    
+                    <div class="template-preview bg-light p-3 rounded">
+                        <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">{{ template.template_text }}</pre>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> Создан: {{ template.created_at|date:"d.m.Y H:i" }}
+                            {% if template.updated_at != template.created_at %}
+                            | Обновлен: {{ template.updated_at|date:"d.m.Y H:i" }}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <h4>Нет шаблонов</h4>
+                <p>Создайте свой первый шаблон для быстрой отправки сообщений</p>
+                <a href="{% url 'dashboard:create_message_template' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Создать первый шаблон
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Справка по переменным -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Доступные переменные в шаблонах</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <code>{name}</code>
+                            <p class="small text-muted">Имя получателя</p>
+                        </div>
+                        <div class="col-md-3">
+                            <code>{username}</code>
+                            <p class="small text-muted">Username получателя</p>
+                        </div>
+                        <div class="col-md-3">
+                            <code>{chat_name}</code>
+                            <p class="small text-muted">Название чата</p>
+                        </div>
+                        <div class="col-md-3">
+                            <code>{message_text}</code>
+                            <p class="small text-muted">Текст исходного сообщения</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6>Пример шаблона:</h6>
+                    <div class="bg-light p-3 rounded">
+                        <pre class="mb-0">Здравствуйте, {name}!
+
+Увидел ваше сообщение в {chat_name} и хочу предложить...
+
+С уважением,
+Ваше имя</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

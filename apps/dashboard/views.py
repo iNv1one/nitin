@@ -10,7 +10,7 @@ from datetime import timedelta
 import json
 import logging
 
-from apps.telegram_parser.models import KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus, GlobalChat, UserChatSettings, RawMessage
+from apps.telegram_parser.models import KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus, GlobalChat, UserChatSettings, RawMessage, MessageTemplate
 from apps.users.models import User
 
 logger = logging.getLogger(__name__)
@@ -970,3 +970,158 @@ def send_message_to_lead(request, message_id):
             'success': False,
             'message': f'Ошибка: {str(e)}'
         }, status=500)
+
+
+@login_required
+def sender_accounts(request):
+    """Управление sender-аккаунтами"""
+    user = request.user
+    
+    # Информация о подключенных аккаунтах
+    context = {
+        'user': user,
+        'has_sender_account': user.has_sender_account,
+        'sender_phone': user.sender_phone,
+    }
+    
+    return render(request, 'dashboard/sender_accounts.html', context)
+
+
+@login_required
+@require_http_methods(['POST'])
+def setup_sender_account(request):
+    """Настройка sender-аккаунта"""
+    import asyncio
+    from apps.telegram_parser.sender_client import create_session_string
+    
+    try:
+        api_id = request.POST.get('api_id')
+        api_hash = request.POST.get('api_hash')
+        phone = request.POST.get('phone')
+        
+        if not all([api_id, api_hash, phone]):
+            messages.error(request, 'Заполните все поля')
+            return redirect('dashboard:sender_accounts')
+        
+        # Сохраняем данные
+        user = request.user
+        user.sender_api_id = int(api_id)
+        user.sender_api_hash = api_hash
+        user.sender_phone = phone
+        user.save()
+        
+        messages.success(request, 'Данные sender-аккаунта сохранены. Теперь нужно авторизоваться через Telegram.')
+        return redirect('dashboard:sender_account_auth')
+        
+    except Exception as e:
+        logger.error(f"Error setting up sender account: {e}")
+        messages.error(request, f'Ошибка: {str(e)}')
+        return redirect('dashboard:sender_accounts')
+
+
+@login_required
+def sender_account_auth(request):
+    """Страница авторизации sender-аккаунта"""
+    return render(request, 'dashboard/sender_account_auth.html')
+
+
+@login_required
+@require_http_methods(['POST'])
+def disconnect_sender_account(request):
+    """Отключение sender-аккаунта"""
+    user = request.user
+    user.sender_api_id = None
+    user.sender_api_hash = ''
+    user.sender_phone = ''
+    user.sender_session_string = ''
+    user.save()
+    
+    messages.success(request, 'Sender-аккаунт отключен')
+    return redirect('dashboard:sender_accounts')
+
+
+@login_required
+def message_templates(request):
+    """Управление шаблонами сообщений"""
+    templates = MessageTemplate.objects.filter(user=request.user)
+    
+    context = {
+        'templates': templates,
+    }
+    
+    return render(request, 'dashboard/message_templates.html', context)
+
+
+@login_required
+def create_message_template(request):
+    """Создание шаблона сообщения"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        subject = request.POST.get('subject', '')
+        template_text = request.POST.get('template_text')
+        is_default = request.POST.get('is_default') == 'on'
+        
+        if not name or not template_text:
+            messages.error(request, 'Заполните обязательные поля')
+            return redirect('dashboard:message_templates')
+        
+        template = MessageTemplate.objects.create(
+            user=request.user,
+            name=name,
+            subject=subject,
+            template_text=template_text,
+            is_default=is_default
+        )
+        
+        messages.success(request, f'Шаблон "{name}" создан')
+        return redirect('dashboard:message_templates')
+    
+    return render(request, 'dashboard/create_message_template.html')
+
+
+@login_required
+def edit_message_template(request, template_id):
+    """Редактирование шаблона"""
+    template = get_object_or_404(MessageTemplate, id=template_id, user=request.user)
+    
+    if request.method == 'POST':
+        template.name = request.POST.get('name')
+        template.subject = request.POST.get('subject', '')
+        template.template_text = request.POST.get('template_text')
+        template.is_default = request.POST.get('is_default') == 'on'
+        template.save()
+        
+        messages.success(request, f'Шаблон "{template.name}" обновлен')
+        return redirect('dashboard:message_templates')
+    
+    context = {
+        'template': template,
+    }
+    
+    return render(request, 'dashboard/edit_message_template.html', context)
+
+
+@login_required
+@require_http_methods(['POST'])
+def delete_message_template(request, template_id):
+    """Удаление шаблона"""
+    template = get_object_or_404(MessageTemplate, id=template_id, user=request.user)
+    name = template.name
+    template.delete()
+    
+    messages.success(request, f'Шаблон "{name}" удален')
+    return redirect('dashboard:message_templates')
+
+
+@login_required
+@require_http_methods(['GET'])
+def get_message_template(request, template_id):
+    """Получение текста шаблона (AJAX)"""
+    template = get_object_or_404(MessageTemplate, id=template_id, user=request.user)
+    
+    return JsonResponse({
+        'success': True,
+        'name': template.name,
+        'text': template.template_text
+    })
+

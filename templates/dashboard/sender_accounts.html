@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Sender-аккаунты - Telegram Parser{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-user-plus"></i> Управление Sender-аккаунтами</h2>
+            <p class="text-muted">Настройка аккаунтов для отправки сообщений лидам</p>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row mb-3">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Статус подключения -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Статус подключения</h5>
+                </div>
+                <div class="card-body">
+                    {% if has_sender_account %}
+                    <div class="alert alert-success">
+                        <h5><i class="fas fa-check-circle"></i> Sender-аккаунт подключен</h5>
+                        <p class="mb-2"><strong>Телефон:</strong> {{ sender_phone }}</p>
+                        <p class="mb-0">Вы можете отправлять сообщения лидам с помощью кнопки "Написать" на странице Сообщения.</p>
+                    </div>
+                    
+                    <form method="post" action="{% url 'dashboard:disconnect_sender_account' %}" 
+                          onsubmit="return confirm('Вы уверены, что хотите отключить sender-аккаунт?')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-unlink"></i> Отключить аккаунт
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Sender-аккаунт не подключен</h5>
+                        <p class="mb-0">Подключите Telegram аккаунт для автоматической отправки сообщений лидам</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Форма подключения -->
+            {% if not has_sender_account %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-plug"></i> Подключить Sender-аккаунт</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'dashboard:setup_sender_account' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="api_id" class="form-label">API ID <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="api_id" name="api_id" required>
+                            <div class="form-text">Получите на <a href="https://my.telegram.org" target="_blank">my.telegram.org</a></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="api_hash" class="form-label">API Hash <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="api_hash" name="api_hash" required>
+                            <div class="form-text">Получите на <a href="https://my.telegram.org" target="_blank">my.telegram.org</a></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Номер телефона <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control" id="phone" name="phone" placeholder="+1234567890" required>
+                            <div class="form-text">Номер в международном формате (например, +79001234567)</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить и продолжить
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Информационная панель -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> Как это работает?</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Зачем нужен Sender-аккаунт?</h6>
+                    <p>Это отдельный Telegram аккаунт, от имени которого будут отправляться сообщения лидам.</p>
+                    
+                    <h6 class="mt-3">Преимущества:</h6>
+                    <ul>
+                        <li>Автоматизация коммуникации</li>
+                        <li>Отправка от реального аккаунта (не бота)</li>
+                        <li>Использование шаблонов</li>
+                        <li>История отправленных сообщений</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Важно:</h6>
+                    <ul>
+                        <li><strong>Используйте РАЗНЫЕ</strong> аккаунты для парсинга и отправки</li>
+                        <li>Не отправляйте спам</li>
+                        <li>Соблюдайте лимиты Telegram</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-book"></i> Инструкция</h5>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li>Создайте отдельный Telegram аккаунт</li>
+                        <li>Перейдите на <a href="https://my.telegram.org" target="_blank">my.telegram.org</a></li>
+                        <li>Войдите с новым аккаунтом</li>
+                        <li>Создайте приложение в "API development tools"</li>
+                        <li>Скопируйте API ID и API Hash</li>
+                        <li>Заполните форму слева</li>
+                        <li>Пройдите авторизацию через Telegram</li>
+                        <li>Готово!</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

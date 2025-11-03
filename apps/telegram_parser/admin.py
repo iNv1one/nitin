@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.db.models import Count, Q
 from .models import (
     KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,
-    GlobalChat, UserChatSettings, ChatRequest
+    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate
 )
 
 
@@ -430,4 +430,10 @@ class ChatRequestAdmin(admin.ModelAdmin):
 # Настройка админки
 admin.site.site_header = "Telegram Parser SaaS"
 admin.site.site_title = "Parser Admin"
-admin.site.index_title = "Панель управления Telegram Parser"
+admin.site.index_title = "Панель управления Telegram Parser" 
+ @ a d m i n . r e g i s t e r ( M e s s a g e T e m p l a t e )  
+ c l a s s   M e s s a g e T e m p l a t e A d m i n ( a d m i n . M o d e l A d m i n ) :  
+         l i s t _ d i s p l a y   =   [ ' n a m e ' ,   ' u s e r ' ,   ' s u b j e c t ' ,   ' i s _ d e f a u l t ' ,   ' i s _ a c t i v e ' ,   ' c r e a t e d _ a t ' ]  
+         l i s t _ f i l t e r   =   [ ' i s _ d e f a u l t ' ,   ' i s _ a c t i v e ' ,   ' c r e a t e d _ a t ' ]  
+         s e a r c h _ f i e l d s   =   [ ' n a m e ' ,   ' s u b j e c t ' ,   ' t e m p l a t e _ t e x t ' ]  
+ 

@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Создать шаблон - Telegram Parser{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-plus"></i> Создать шаблон сообщения</h2>
+            <p class="text-muted">Заполните поля для создания нового шаблона</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Название шаблона <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required
+                                   placeholder="Например: Первое касание, Повторное предложение">
+                            <div class="form-text">Название для удобства, не видно получателю</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Тема/описание</label>
+                            <input type="text" class="form-control" id="subject" name="subject"
+                                   placeholder="Краткое описание когда использовать этот шаблон">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="template_text" class="form-label">Текст шаблона <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="template_text" name="template_text" rows="10" required
+                                      placeholder="Здравствуйте, {name}!&#10;&#10;Увидел ваше сообщение в {chat_name}..."></textarea>
+                            <div class="form-text">Используйте переменные: {name}, {username}, {chat_name}, {message_text}</div>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_default" name="is_default">
+                            <label class="form-check-label" for="is_default">
+                                Использовать по умолчанию
+                            </label>
+                            <div class="form-text">Этот шаблон будет предложен при отправке сообщения</div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Создать шаблон
+                            </button>
+                            <a href="{% url 'dashboard:message_templates' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Советы</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Переменные:</h6>
+                    <ul>
+                        <li><code>{name}</code> - имя получателя</li>
+                        <li><code>{username}</code> - @username</li>
+                        <li><code>{chat_name}</code> - название чата</li>
+                        <li><code>{message_text}</code> - текст сообщения лида</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Рекомендации:</h6>
+                    <ul>
+                        <li>Персонализируйте сообщения</li>
+                        <li>Будьте вежливы и кратки</li>
+                        <li>Укажите цель обращения</li>
+                        <li>Добавьте призыв к действию</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

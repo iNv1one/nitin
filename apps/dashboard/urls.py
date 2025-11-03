@@ -43,6 +43,19 @@ urlpatterns = [
     
     # Статистика
     path('statistics/', views.statistics, name='statistics'),
+    
+    # Sender-аккаунты
+    path('sender-accounts/', views.sender_accounts, name='sender_accounts'),
+    path('sender-accounts/setup/', views.setup_sender_account, name='setup_sender_account'),
+    path('sender-accounts/auth/', views.sender_account_auth, name='sender_account_auth'),
+    path('sender-accounts/disconnect/', views.disconnect_sender_account, name='disconnect_sender_account'),
+    
+    # Шаблоны сообщений
+    path('templates/', views.message_templates, name='message_templates'),
+    path('templates/create/', views.create_message_template, name='create_message_template'),
+    path('templates/<int:template_id>/edit/', views.edit_message_template, name='edit_message_template'),
+    path('templates/<int:template_id>/delete/', views.delete_message_template, name='delete_message_template'),
+    path('templates/<int:template_id>/get/', views.get_message_template, name='get_message_template'),
 
     
     # API endpoints
