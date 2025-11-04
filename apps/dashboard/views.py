@@ -997,7 +997,8 @@ def sender_accounts(request):
 def setup_sender_account(request):
     """Настройка sender-аккаунта"""
     import asyncio
-    from apps.telegram_parser.sender_client import create_session_string
+    from telethon import TelegramClient
+    from telethon.sessions import StringSession
     
     try:
         api_id = request.POST.get('api_id')
@@ -1015,8 +1016,31 @@ def setup_sender_account(request):
         user.sender_phone = phone
         user.save()
         
-        messages.success(request, 'Данные sender-аккаунта сохранены. Теперь нужно авторизоваться через Telegram.')
-        return redirect('dashboard:sender_account_auth')
+        # Отправляем код подтверждения
+        async def send_code():
+            client = TelegramClient(StringSession(), int(api_id), api_hash)
+            try:
+                await client.connect()
+                await client.send_code_request(phone)
+                return True, "Код отправлен"
+            except Exception as e:
+                logger.error(f"Error sending code: {e}")
+                return False, str(e)
+            finally:
+                await client.disconnect()
+        
+        # Выполняем отправку кода
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        success, result = loop.run_until_complete(send_code())
+        loop.close()
+        
+        if success:
+            messages.success(request, f'Код подтверждения отправлен на {phone} в приложении Telegram!')
+            return redirect('dashboard:sender_account_auth')
+        else:
+            messages.error(request, f'Ошибка отправки кода: {result}')
+            return redirect('dashboard:sender_accounts')
         
     except Exception as e:
         logger.error(f"Error setting up sender account: {e}")

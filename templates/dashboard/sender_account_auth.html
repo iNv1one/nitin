@@ -34,14 +34,26 @@
                             <div class="form-text">Введите 5-значный код из Telegram</div>
                         </div>
 
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       id="has2fa" 
+                                       onchange="toggle2FAField()">
+                                <label class="form-check-label" for="has2fa">
+                                    У меня включена двухфакторная аутентификация (2FA)
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="mb-3" id="passwordField" style="display: none;">
-                            <label for="password" class="form-label">Пароль 2FA</label>
+                            <label for="password" class="form-label">Пароль 2FA <span class="text-danger">*</span></label>
                             <input type="password" 
                                    class="form-control" 
                                    id="password" 
                                    name="password" 
-                                   placeholder="Введите пароль если включена 2FA">
-                            <div class="form-text">Введите пароль двухфакторной аутентификации, если у вас установлена 2FA</div>
+                                   placeholder="Введите пароль Cloud Password">
+                            <div class="form-text">Это пароль, который вы установили в настройках Telegram → Privacy and Security → Two-Step Verification</div>
                         </div>
 
                         <div class="d-grid gap-2">
@@ -78,12 +90,21 @@
 </div>
 
 <script>
-// Автоматически показываем поле пароля если код введен
-document.getElementById('code').addEventListener('input', function(e) {
-    if (e.target.value.length === 5) {
-        document.getElementById('passwordField').style.display = 'block';
+// Показать/скрыть поле пароля 2FA
+function toggle2FAField() {
+    const checkbox = document.getElementById('has2fa');
+    const passwordField = document.getElementById('passwordField');
+    const passwordInput = document.getElementById('password');
+    
+    if (checkbox.checked) {
+        passwordField.style.display = 'block';
+        passwordInput.required = true;
+    } else {
+        passwordField.style.display = 'none';
+        passwordInput.required = false;
+        passwordInput.value = '';
     }
-});
+}
 
 // Автофокус на первом поле
 document.addEventListener('DOMContentLoaded', function() {
