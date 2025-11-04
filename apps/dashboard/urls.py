@@ -48,6 +48,7 @@ urlpatterns = [
     path('sender-accounts/', views.sender_accounts, name='sender_accounts'),
     path('sender-accounts/setup/', views.setup_sender_account, name='setup_sender_account'),
     path('sender-accounts/auth/', views.sender_account_auth, name='sender_account_auth'),
+    path('sender-accounts/verify/', views.verify_sender_code, name='verify_sender_code'),
     path('sender-accounts/disconnect/', views.disconnect_sender_account, name='disconnect_sender_account'),
     
     # Шаблоны сообщений

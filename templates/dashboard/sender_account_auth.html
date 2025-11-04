@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Авторизация Sender-аккаунта - NITIN{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-shield-alt"></i> Авторизация Telegram аккаунта</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        Telegram отправил код подтверждения на номер <strong>{{ user.sender_phone }}</strong>
+                    </div>
+
+                    <form method="post" action="{% url 'dashboard:verify_sender_code' %}" id="verificationForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="code" class="form-label">Код подтверждения <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control form-control-lg text-center" 
+                                   id="code" 
+                                   name="code" 
+                                   placeholder="12345"
+                                   required
+                                   maxlength="5"
+                                   pattern="[0-9]{5}"
+                                   autocomplete="off"
+                                   autofocus>
+                            <div class="form-text">Введите 5-значный код из Telegram</div>
+                        </div>
+
+                        <div class="mb-3" id="passwordField" style="display: none;">
+                            <label for="password" class="form-label">Пароль 2FA</label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="Введите пароль если включена 2FA">
+                            <div class="form-text">Введите пароль двухфакторной аутентификации, если у вас установлена 2FA</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-check"></i> Подтвердить
+                            </button>
+                            <a href="{% url 'dashboard:sender_accounts' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-lock"></i> Ваши данные надежно защищены и используются только для отправки сообщений
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="fas fa-question-circle"></i> Не получили код?</h6>
+                    <ul class="mb-0">
+                        <li>Проверьте, что номер телефона указан правильно</li>
+                        <li>Код приходит в приложении Telegram (не SMS)</li>
+                        <li>Проверьте раздел "Saved Messages" в Telegram</li>
+                        <li>Попробуйте <a href="{% url 'dashboard:sender_accounts' %}">начать заново</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Автоматически показываем поле пароля если код введен
+document.getElementById('code').addEventListener('input', function(e) {
+    if (e.target.value.length === 5) {
+        document.getElementById('passwordField').style.display = 'block';
+    }
+});
+
+// Автофокус на первом поле
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('code').focus();
+});
+</script>
+{% endblock %}

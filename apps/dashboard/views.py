@@ -1027,7 +1027,93 @@ def setup_sender_account(request):
 @login_required
 def sender_account_auth(request):
     """Страница авторизации sender-аккаунта"""
+    # Проверяем что данные аккаунта сохранены
+    if not request.user.sender_api_id or not request.user.sender_phone:
+        messages.error(request, 'Сначала нужно ввести данные аккаунта')
+        return redirect('dashboard:sender_accounts')
+    
     return render(request, 'dashboard/sender_account_auth.html')
+
+
+@login_required
+@require_http_methods(['POST'])
+def verify_sender_code(request):
+    """Проверка кода подтверждения и завершение авторизации"""
+    import asyncio
+    from telethon import TelegramClient
+    from telethon.sessions import StringSession
+    from telethon.errors import SessionPasswordNeededError, PhoneCodeInvalidError
+    
+    user = request.user
+    code = request.POST.get('code', '').strip()
+    password = request.POST.get('password', '').strip()
+    
+    if not code:
+        messages.error(request, 'Введите код подтверждения')
+        return redirect('dashboard:sender_account_auth')
+    
+    async def authorize_account():
+        """Асинхронная авторизация"""
+        client = TelegramClient(
+            StringSession(),
+            user.sender_api_id,
+            user.sender_api_hash
+        )
+        
+        try:
+            await client.connect()
+            
+            # Отправляем запрос кода (если еще не отправлен)
+            if not await client.is_user_authorized():
+                await client.send_code_request(user.sender_phone)
+            
+            # Пытаемся авторизоваться с кодом
+            try:
+                await client.sign_in(user.sender_phone, code)
+            except SessionPasswordNeededError:
+                # Требуется 2FA пароль
+                if not password:
+                    return False, "Требуется пароль двухфакторной аутентификации"
+                await client.sign_in(password=password)
+            except PhoneCodeInvalidError:
+                return False, "Неверный код подтверждения"
+            
+            # Проверяем авторизацию
+            if await client.is_user_authorized():
+                # Сохраняем session string
+                session_string = client.session.save()
+                return True, session_string
+            else:
+                return False, "Не удалось авторизоваться"
+                
+        except Exception as e:
+            logger.error(f"Error during authorization: {e}")
+            return False, str(e)
+        finally:
+            await client.disconnect()
+    
+    # Выполняем авторизацию
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        success, result = loop.run_until_complete(authorize_account())
+        loop.close()
+        
+        if success:
+            # Сохраняем session string
+            user.sender_session_string = result
+            user.save()
+            
+            messages.success(request, 'Sender-аккаунт успешно подключен! Теперь вы можете отправлять сообщения.')
+            return redirect('dashboard:sender_accounts')
+        else:
+            messages.error(request, f'Ошибка авторизации: {result}')
+            return redirect('dashboard:sender_account_auth')
+            
+    except Exception as e:
+        logger.error(f"Error in verify_sender_code: {e}")
+        messages.error(request, f'Ошибка: {str(e)}')
+        return redirect('dashboard:sender_account_auth')
 
 
 @login_required
