@@ -326,6 +326,9 @@ def processed_messages(request):
             month_ago = timezone.now() - timedelta(days=30)
             messages_qs = messages_qs.filter(processed_at__gte=month_ago)
     
+    # Подсчитываем общее количество сообщений (с учетом фильтров)
+    total_count = messages_qs.count()
+    
     # Пагинация
     paginator = Paginator(messages_qs, 20)
     page_number = request.GET.get('page')
@@ -338,9 +341,11 @@ def processed_messages(request):
     context = {
         'page_obj': page_obj,
         'user': user,
+        'total_count': total_count,
         'status_filter': status_filter,
         'keyword_filter': keyword_filter,
         'date_filter': date_filter,
+        'progress_filter': progress_filter,
         'status_counts': status_counts,
         'keyword_groups': keyword_groups,
     }
