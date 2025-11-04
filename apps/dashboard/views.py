@@ -1021,10 +1021,11 @@ def setup_sender_account(request):
             client = TelegramClient(StringSession(), int(api_id), api_hash)
             try:
                 await client.connect()
-                await client.send_code_request(phone)
-                # Сохраняем промежуточную сессию для последующей авторизации
+                phone_code_request = await client.send_code_request(phone)
+                # Сохраняем промежуточную сессию и phone_code_hash для последующей авторизации
                 session_string = client.session.save()
-                return True, session_string
+                phone_code_hash = phone_code_request.phone_code_hash
+                return True, (session_string, phone_code_hash)
             except Exception as e:
                 logger.error(f"Error sending code: {e}")
                 return False, str(e)
@@ -1038,8 +1039,10 @@ def setup_sender_account(request):
         loop.close()
         
         if success:
-            # Сохраняем промежуточную сессию
-            user.sender_session_string = result
+            # Сохраняем промежуточную сессию и phone_code_hash
+            session_string, phone_code_hash = result
+            user.sender_session_string = session_string
+            user.sender_phone_code_hash = phone_code_hash
             user.save()
             logger.info(f"Code sent and temp session saved for user {user.id}")
             messages.success(request, f'Код подтверждения отправлен на {phone} в приложении Telegram!')
@@ -1118,7 +1121,8 @@ def verify_sender_code(request):
             # Пытаемся авторизоваться с кодом
             try:
                 logger.info("Attempting sign in with code...")
-                await client.sign_in(user.sender_phone, code)
+                # Используем сохраненный phone_code_hash
+                await client.sign_in(user.sender_phone, code, phone_code_hash=user.sender_phone_code_hash)
                 logger.info("Sign in successful!")
             except SessionPasswordNeededError:
                 logger.info("2FA password required")

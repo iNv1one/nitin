@@ -54,6 +54,12 @@ class User(AbstractUser):
         verbose_name="Sender Session",
         help_text="Строка сессии для аккаунта-отправителя"
     )
+    sender_phone_code_hash = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Phone Code Hash",
+        help_text="Хеш кода для авторизации (временное поле)"
+    )
     
     # Message templates
     default_message_template = models.TextField(
