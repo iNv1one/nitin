@@ -69,14 +69,29 @@ class SenderClient:
                 logger.error("Client not connected")
                 return False
             
-            # Получаем entity пользователя
-            entity = await self.client.get_entity(user_id)
-            
-            # Отправляем сообщение
-            await self.client.send_message(entity, message_text)
-            
-            logger.info(f"Message sent successfully to user {user_id}")
-            return True
+            # Пробуем разные способы получить entity
+            try:
+                # Способ 1: Получаем entity напрямую по ID
+                from telethon.tl.types import PeerUser
+                entity = PeerUser(user_id)
+                
+                # Отправляем сообщение
+                await self.client.send_message(entity, message_text)
+                logger.info(f"Message sent successfully to user {user_id}")
+                return True
+                
+            except Exception as e1:
+                logger.warning(f"Failed to send via PeerUser, trying get_entity: {e1}")
+                
+                # Способ 2: Пытаемся получить через get_entity
+                try:
+                    entity = await self.client.get_entity(user_id)
+                    await self.client.send_message(entity, message_text)
+                    logger.info(f"Message sent successfully to user {user_id} via get_entity")
+                    return True
+                except Exception as e2:
+                    logger.error(f"Failed to get entity for {user_id}: {e2}")
+                    return False
             
         except Exception as e:
             logger.error(f"Error sending message to {user_id}: {e}")

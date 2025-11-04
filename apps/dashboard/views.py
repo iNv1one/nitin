@@ -945,7 +945,15 @@ def send_message_to_lead(request, message_id):
         # Отправляем сообщение асинхронно
         async def send():
             await sender.connect()
-            success = await sender.send_message(message.sender_id, message_text)
+            
+            # Используем username если есть, иначе ID
+            if message.sender_username:
+                success = await sender.send_message_by_username(message.sender_username, message_text)
+            elif message.sender_id:
+                success = await sender.send_message(message.sender_id, message_text)
+            else:
+                return False
+            
             await sender.disconnect()
             return success
         
