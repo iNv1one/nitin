@@ -116,7 +116,7 @@ class ProcessedMessageAdmin(admin.ModelAdmin):
         'matched_keywords_display', 'status_flags', 'notification_sent', 'processed_at'
     ]
     list_filter = [
-        'notification_sent', 'is_qualified', 'is_processed', 
+        'notification_sent', 'quality_status', 
         'dialog_started', 'sale_made', 'processed_at',
         'user__subscription_plan'
     ]
@@ -124,13 +124,13 @@ class ProcessedMessageAdmin(admin.ModelAdmin):
         'message_text', 'sender_name', 'sender_username', 
         'user__username', 'matched_keywords'
     ]
-    list_select_related = ['user', 'keyword_group', 'monitored_chat']
+    list_select_related = ['user', 'keyword_group', 'monitored_chat', 'global_chat']
     date_hierarchy = 'processed_at'
     
     fieldsets = (
         ('Информация о сообщении', {
             'fields': (
-                'user', 'keyword_group', 'monitored_chat',
+                'user', 'keyword_group', 'global_chat', 'monitored_chat',
                 'message_id', 'chat_id', 'message_link'
             )
         }),
@@ -145,8 +145,8 @@ class ProcessedMessageAdmin(admin.ModelAdmin):
         }),
         ('Статусы', {
             'fields': (
-                'notification_sent', 'is_processed', 'is_qualified',
-                'dialog_started', 'sale_made'
+                'notification_sent', 'quality_status',
+                'dialog_started', 'sale_made', 'telegram_message_id'
             )
         }),
         ('Дополнительно', {
@@ -162,7 +162,7 @@ class ProcessedMessageAdmin(admin.ModelAdmin):
     readonly_fields = ['processed_at', 'updated_at']
     
     # Действия
-    actions = ['mark_as_qualified', 'mark_as_processed', 'mark_dialog_started']
+    actions = ['mark_as_qualified', 'mark_as_unqualified', 'mark_dialog_started']
     
     def sender_name_display(self, obj):
         """Отображение отправителя"""
@@ -202,15 +202,15 @@ class ProcessedMessageAdmin(admin.ModelAdmin):
     # Actions
     def mark_as_qualified(self, request, queryset):
         """Отметить как квалифицированные"""
-        updated = queryset.update(is_qualified=True)
+        updated = queryset.update(quality_status='qualified')
         self.message_user(request, f"Отмечено как квалифицированные: {updated} сообщений")
     mark_as_qualified.short_description = "Отметить как квалифицированные"
     
-    def mark_as_processed(self, request, queryset):
-        """Отметить как обработанные"""
-        updated = queryset.update(is_processed=True)
-        self.message_user(request, f"Отмечено как обработанные: {updated} сообщений")
-    mark_as_processed.short_description = "Отметить как обработанные"
+    def mark_as_unqualified(self, request, queryset):
+        """Отметить как неквалифицированные"""
+        updated = queryset.update(quality_status='unqualified')
+        self.message_user(request, f"Отмечено как неквалифицированные: {updated} сообщений")
+    mark_as_unqualified.short_description = "Отметить как неквалифицированные"
     
     def mark_dialog_started(self, request, queryset):
         """Отметить что диалог начат"""
