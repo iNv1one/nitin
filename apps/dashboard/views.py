@@ -1022,7 +1022,9 @@ def setup_sender_account(request):
             try:
                 await client.connect()
                 await client.send_code_request(phone)
-                return True, "Код отправлен"
+                # Сохраняем промежуточную сессию для последующей авторизации
+                session_string = client.session.save()
+                return True, session_string
             except Exception as e:
                 logger.error(f"Error sending code: {e}")
                 return False, str(e)
@@ -1036,6 +1038,10 @@ def setup_sender_account(request):
         loop.close()
         
         if success:
+            # Сохраняем промежуточную сессию
+            user.sender_session_string = result
+            user.save()
+            logger.info(f"Code sent and temp session saved for user {user.id}")
             messages.success(request, f'Код подтверждения отправлен на {phone} в приложении Telegram!')
             return redirect('dashboard:sender_account_auth')
         else:
@@ -1072,6 +1078,9 @@ def verify_sender_code(request):
     code = request.POST.get('code', '').strip()
     password = request.POST.get('password', '').strip()
     
+    # Убираем все нецифровые символы из кода (пробелы, дефисы и т.д.)
+    code = ''.join(filter(str.isdigit, code))
+    
     logger.info(f"Verify sender code started for user {user.id}, phone {user.sender_phone}")
     
     if not code:
@@ -1082,8 +1091,12 @@ def verify_sender_code(request):
     
     async def authorize_account():
         """Асинхронная авторизация"""
+        # Используем временную сессию для авторизации
+        # После успешной авторизации сохраним session string
+        temp_session = user.sender_session_string if user.sender_session_string else ''
+        
         client = TelegramClient(
-            StringSession(),
+            StringSession(temp_session),
             user.sender_api_id,
             user.sender_api_hash
         )
@@ -1096,11 +1109,11 @@ def verify_sender_code(request):
             is_authorized = await client.is_user_authorized()
             logger.info(f"Already authorized: {is_authorized}")
             
-            # Отправляем запрос кода только если еще не авторизованы
-            if not is_authorized:
-                logger.info(f"Sending code request to {user.sender_phone}")
-                await client.send_code_request(user.sender_phone)
-                logger.info("Code request sent")
+            # Если уже авторизованы - просто сохраняем сессию
+            if is_authorized:
+                logger.info("Already authorized, saving session")
+                session_string = client.session.save()
+                return True, session_string
             
             # Пытаемся авторизоваться с кодом
             try:
