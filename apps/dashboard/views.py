@@ -1072,9 +1072,13 @@ def verify_sender_code(request):
     code = request.POST.get('code', '').strip()
     password = request.POST.get('password', '').strip()
     
+    logger.info(f"Verify sender code started for user {user.id}, phone {user.sender_phone}")
+    
     if not code:
         messages.error(request, 'Введите код подтверждения')
         return redirect('dashboard:sender_account_auth')
+    
+    logger.info(f"Code received: {code[:2]}*** (length: {len(code)})")
     
     async def authorize_account():
         """Асинхронная авторизация"""
@@ -1085,57 +1089,82 @@ def verify_sender_code(request):
         )
         
         try:
+            logger.info("Connecting to Telegram...")
             await client.connect()
             
-            # Отправляем запрос кода (если еще не отправлен)
-            if not await client.is_user_authorized():
+            logger.info("Checking authorization status...")
+            is_authorized = await client.is_user_authorized()
+            logger.info(f"Already authorized: {is_authorized}")
+            
+            # Отправляем запрос кода только если еще не авторизованы
+            if not is_authorized:
+                logger.info(f"Sending code request to {user.sender_phone}")
                 await client.send_code_request(user.sender_phone)
+                logger.info("Code request sent")
             
             # Пытаемся авторизоваться с кодом
             try:
+                logger.info("Attempting sign in with code...")
                 await client.sign_in(user.sender_phone, code)
+                logger.info("Sign in successful!")
             except SessionPasswordNeededError:
+                logger.info("2FA password required")
                 # Требуется 2FA пароль
                 if not password:
-                    return False, "Требуется пароль двухфакторной аутентификации"
+                    logger.warning("2FA required but no password provided")
+                    return False, "Требуется пароль двухфакторной аутентификации. Поставьте галочку '2FA' и введите пароль."
+                logger.info("Attempting sign in with 2FA password...")
                 await client.sign_in(password=password)
-            except PhoneCodeInvalidError:
-                return False, "Неверный код подтверждения"
+                logger.info("2FA sign in successful!")
+            except PhoneCodeInvalidError as e:
+                logger.warning(f"Invalid phone code: {e}")
+                return False, "Неверный код подтверждения. Проверьте код и попробуйте снова."
+            except Exception as e:
+                logger.error(f"Sign in error: {type(e).__name__}: {e}")
+                return False, f"Ошибка авторизации: {str(e)}"
             
             # Проверяем авторизацию
+            logger.info("Checking final authorization status...")
             if await client.is_user_authorized():
                 # Сохраняем session string
                 session_string = client.session.save()
+                logger.info(f"Authorization successful! Session string length: {len(session_string)}")
                 return True, session_string
             else:
-                return False, "Не удалось авторизоваться"
+                logger.error("Authorization check failed after sign in")
+                return False, "Не удалось завершить авторизацию"
                 
         except Exception as e:
-            logger.error(f"Error during authorization: {e}")
+            logger.error(f"Error during authorization: {type(e).__name__}: {e}", exc_info=True)
             return False, str(e)
         finally:
             await client.disconnect()
+            logger.info("Client disconnected")
     
     # Выполняем авторизацию
     try:
+        logger.info("Starting authorization process...")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         success, result = loop.run_until_complete(authorize_account())
         loop.close()
+        logger.info(f"Authorization completed: success={success}")
         
         if success:
             # Сохраняем session string
             user.sender_session_string = result
             user.save()
+            logger.info(f"Session string saved for user {user.id}")
             
             messages.success(request, 'Sender-аккаунт успешно подключен! Теперь вы можете отправлять сообщения.')
             return redirect('dashboard:sender_accounts')
         else:
+            logger.warning(f"Authorization failed: {result}")
             messages.error(request, f'Ошибка авторизации: {result}')
             return redirect('dashboard:sender_account_auth')
             
     except Exception as e:
-        logger.error(f"Error in verify_sender_code: {e}")
+        logger.error(f"Error in verify_sender_code: {type(e).__name__}: {e}", exc_info=True)
         messages.error(request, f'Ошибка: {str(e)}')
         return redirect('dashboard:sender_account_auth')
 
