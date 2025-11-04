@@ -929,11 +929,15 @@ def send_message_to_lead(request, message_id):
                     'success': False,
                     'message': 'Введите текст сообщения или настройте шаблон по умолчанию'
                 }, status=400)
-            
-            # Заменяем переменные в шаблоне
-            message_text = template.replace('{name}', message.sender_name or 'там')
+            message_text = template
         else:
             message_text = custom_text
+        
+        # Заменяем переменные в тексте сообщения
+        message_text = message_text.replace('{name}', message.sender_name or 'там')
+        message_text = message_text.replace('{username}', f"@{message.sender_username}" if message.sender_username else 'там')
+        message_text = message_text.replace('{chat_name}', message.global_chat.name if message.global_chat else 'общего чата')
+        message_text = message_text.replace('{message_text}', (message.message_text[:100] + '...') if len(message.message_text) > 100 else message.message_text)
         
         # Создаем sender client
         sender = SenderClient(
