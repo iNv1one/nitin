@@ -278,9 +278,9 @@ class BotStatusAdmin(admin.ModelAdmin):
             return
         
         try:
-            # Выполняем перезапуск службы
+            # Выполняем перезапуск службы (используем абсолютный путь к sudo)
             result = subprocess.run(
-                ['sudo', 'systemctl', 'restart', 'telegram-parser-celery.service'],
+                ['/usr/bin/sudo', '/usr/bin/systemctl', 'restart', 'telegram-parser-celery.service'],
                 capture_output=True,
                 text=True,
                 timeout=10
@@ -361,7 +361,7 @@ class GlobalChatAdmin(admin.ModelAdmin):
         
         try:
             result = subprocess.run(
-                ['sudo', 'systemctl', 'restart', 'telegram-parser-celery.service'],
+                ['/usr/bin/sudo', '/usr/bin/systemctl', 'restart', 'telegram-parser-celery.service'],
                 capture_output=True,
                 text=True,
                 timeout=10
