@@ -28,48 +28,6 @@
         </div>
     </div>
 
-    <!-- Общая статистика -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h5 class="card-title">Всего сообщений</h5>
-                    <h2 class="mb-0">{{ total_messages }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h5 class="card-title">✅ Одобрено AI</h5>
-                    <h2 class="mb-0">{{ ai_approved }}</h2>
-                    {% if total_messages > 0 %}
-                    <small>{{ ai_approved|floatformat:0 }} из {{ total_messages }}</small>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-danger">
-                <div class="card-body">
-                    <h5 class="card-title">❌ Отклонено AI</h5>
-                    <h2 class="mb-0">{{ ai_rejected }}</h2>
-                    {% if total_messages > 0 %}
-                    <small>{{ ai_rejected|floatformat:0 }} из {{ total_messages }}</small>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h5 class="card-title">💰 Продажи</h5>
-                    <h2 class="mb-0">{{ sale_made }}</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Статистика по статусам -->
     <div class="row mb-4">
         <div class="col-md-6">
@@ -81,16 +39,16 @@
                     <table class="table table-striped">
                         <tbody>
                             <tr>
-                                <td><span class="badge bg-secondary">Без статуса</span></td>
+                                <td>Без статуса</td>
                                 <td class="text-end"><strong>{{ status_stats.none }}</strong></td>
                                 <td class="text-end">
                                     {% if total_messages > 0 %}
-                                    {{ status_stats.none|floatformat:0 }}%
+                                    {% widthratio status_stats.none total_messages 100 %}%
                                     {% endif %}
                                 </td>
                             </tr>
                             <tr>
-                                <td><span class="badge bg-danger">❌ Неквал</span></td>
+                                <td>Неквал</td>
                                 <td class="text-end"><strong>{{ status_stats.unqualified }}</strong></td>
                                 <td class="text-end">
                                     {% if total_messages > 0 %}
@@ -99,7 +57,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td><span class="badge bg-success">✅ Квал</span></td>
+                                <td>Квал</td>
                                 <td class="text-end"><strong>{{ status_stats.qualified }}</strong></td>
                                 <td class="text-end">
                                     {% if total_messages > 0 %}
@@ -108,7 +66,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td><span class="badge bg-warning text-dark">🚫 Спам</span></td>
+                                <td>Спам</td>
                                 <td class="text-end"><strong>{{ status_stats.spam }}</strong></td>
                                 <td class="text-end">
                                     {% if total_messages > 0 %}
@@ -116,8 +74,8 @@
                                     {% endif %}
                                 </td>
                             </tr>
-                            <tr class="table-primary">
-                                <td><span class="badge bg-info">💬 Диалог начат</span></td>
+                            <tr>
+                                <td>Диалог начат</td>
                                 <td class="text-end"><strong>{{ dialog_started }}</strong></td>
                                 <td class="text-end">
                                     {% if total_messages > 0 %}
@@ -125,8 +83,8 @@
                                     {% endif %}
                                 </td>
                             </tr>
-                            <tr class="table-success">
-                                <td><span class="badge bg-primary">💰 Продажа</span></td>
+                            <tr>
+                                <td>Продажа</td>
                                 <td class="text-end"><strong>{{ sale_made }}</strong></td>
                                 <td class="text-end">
                                     {% if total_messages > 0 %}
