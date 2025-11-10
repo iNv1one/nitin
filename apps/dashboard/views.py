@@ -888,8 +888,8 @@ def statistics(request):
                 'efficiency': round(efficiency, 1),
             })
     
-    # Сортируем по эффективности (от большего к меньшему)
-    detailed_group_stats.sort(key=lambda x: x['efficiency'], reverse=True)
+    # Сортируем по количеству сообщений "Всего" (от большего к меньшему)
+    detailed_group_stats.sort(key=lambda x: x['total'], reverse=True)
     
     # Детальная статистика по чатам
     detailed_chat_stats = []
@@ -923,8 +923,8 @@ def statistics(request):
                 'efficiency': round(efficiency, 1),
             })
     
-    # Сортируем по эффективности (от большего к меньшему)
-    detailed_chat_stats.sort(key=lambda x: x['efficiency'], reverse=True)
+    # Сортируем по количеству сообщений "Всего" (от большего к меньшему)
+    detailed_chat_stats.sort(key=lambda x: x['total'], reverse=True)
     
     # Статистика по дням (для графика)
     daily_stats = []

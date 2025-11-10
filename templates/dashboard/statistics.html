@@ -291,8 +291,8 @@ function initTableSort(tableId, defaultColumn = 1, defaultOrder = 'desc') {
     const tbody = table.querySelector('tbody');
     const headers = table.querySelectorAll('.sortable');
     
-    // Устанавливаем начальную сортировку
-    const defaultHeader = Array.from(headers).find(h => h.dataset.column == defaultColumn);
+    // Устанавливаем начальную сортировку (визуальный индикатор)
+    const defaultHeader = Array.from(headers).find(h => parseInt(h.dataset.column) === defaultColumn);
     if (defaultHeader) {
         defaultHeader.classList.add(defaultOrder);
     }
