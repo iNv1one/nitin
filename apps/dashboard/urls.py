@@ -43,6 +43,8 @@ urlpatterns = [
     
     # Статистика
     path('statistics/', views.statistics, name='statistics'),
+    path('statistics/groups/', views.statistics_groups_ajax, name='statistics_groups_ajax'),
+    path('statistics/chats/', views.statistics_chats_ajax, name='statistics_chats_ajax'),
     
     # Sender-аккаунты
     path('sender-accounts/', views.sender_accounts, name='sender_accounts'),

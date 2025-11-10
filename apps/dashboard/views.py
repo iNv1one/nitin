@@ -859,72 +859,8 @@ def statistics(request):
         count=Count('id')
     ).order_by('-count')[:10]
     
-    # Детальная статистика по группам ключевых слов
-    detailed_group_stats = []
-    user_groups = user.keyword_groups.all()
-    
-    for group in user_groups:
-        group_messages = messages.filter(keyword_group=group)
-        total_count = group_messages.count()
-        
-        if total_count > 0:
-            qualified_count = group_messages.filter(quality_status='qualified').count()
-            unqualified_count = group_messages.filter(quality_status='unqualified').count()
-            spam_count = group_messages.filter(quality_status='spam').count()
-            dialog_count = group_messages.filter(dialog_started=True).count()
-            sale_count = group_messages.filter(sale_made=True).count()
-            
-            # Рассчитываем эффективность (квал / всего)
-            efficiency = (qualified_count / total_count * 100) if total_count > 0 else 0
-            
-            detailed_group_stats.append({
-                'name': group.name,
-                'total': total_count,
-                'qualified': qualified_count,
-                'unqualified': unqualified_count,
-                'spam': spam_count,
-                'dialog': dialog_count,
-                'sale': sale_count,
-                'efficiency': round(efficiency, 1),
-            })
-    
-    # Сортируем по количеству сообщений "Всего" (от большего к меньшему)
-    detailed_group_stats.sort(key=lambda x: x['total'], reverse=True)
-    
-    # Детальная статистика по чатам
-    detailed_chat_stats = []
-    
-    # Получаем все глобальные чаты, которые включены у пользователя
-    user_chat_settings = UserChatSettings.objects.filter(user=user, is_enabled=True).select_related('global_chat')
-    
-    for setting in user_chat_settings:
-        chat = setting.global_chat
-        chat_messages = messages.filter(global_chat=chat)
-        total_count = chat_messages.count()
-        
-        if total_count > 0:
-            qualified_count = chat_messages.filter(quality_status='qualified').count()
-            unqualified_count = chat_messages.filter(quality_status='unqualified').count()
-            spam_count = chat_messages.filter(quality_status='spam').count()
-            dialog_count = chat_messages.filter(dialog_started=True).count()
-            sale_count = chat_messages.filter(sale_made=True).count()
-            
-            # Рассчитываем эффективность (квал / всего)
-            efficiency = (qualified_count / total_count * 100) if total_count > 0 else 0
-            
-            detailed_chat_stats.append({
-                'name': chat.name,
-                'total': total_count,
-                'qualified': qualified_count,
-                'unqualified': unqualified_count,
-                'spam': spam_count,
-                'dialog': dialog_count,
-                'sale': sale_count,
-                'efficiency': round(efficiency, 1),
-            })
-    
-    # Сортируем по количеству сообщений "Всего" (от большего к меньшему)
-    detailed_chat_stats.sort(key=lambda x: x['total'], reverse=True)
+    # Детальную статистику загружаем через AJAX - убираем из основной загрузки
+    # detailed_group_stats и detailed_chat_stats будут загружены асинхронно
     
     # Статистика по дням (для графика)
     daily_stats = []
@@ -952,13 +888,118 @@ def statistics(request):
         'dialog_started': dialog_started,
         'sale_made': sale_made,
         'keyword_group_stats': keyword_group_stats,
-        'detailed_group_stats': detailed_group_stats,
-        'detailed_chat_stats': detailed_chat_stats,
         'daily_stats': daily_stats,
         'daily_stats_json': json.dumps(daily_stats),  # Для JavaScript
     }
     
     return render(request, 'dashboard/statistics.html', context)
+
+
+@login_required
+def statistics_groups_ajax(request):
+    """AJAX загрузка статистики по группам"""
+    user = request.user
+    period = request.GET.get('period', 'week')
+    
+    # Определяем временные рамки
+    now = timezone.now()
+    if period == 'day':
+        start_date = now - timedelta(days=1)
+    elif period == 'week':
+        start_date = now - timedelta(days=7)
+    elif period == 'month':
+        start_date = now - timedelta(days=30)
+    else:
+        start_date = now - timedelta(days=7)
+    
+    # Получаем сообщения за период
+    messages = ProcessedMessage.objects.filter(user=user, processed_at__gte=start_date)
+    
+    # Детальная статистика по группам ключевых слов
+    detailed_group_stats = []
+    user_groups = user.keyword_groups.all()
+    
+    for group in user_groups:
+        group_messages = messages.filter(keyword_group=group)
+        total_count = group_messages.count()
+        
+        if total_count > 0:
+            qualified_count = group_messages.filter(quality_status='qualified').count()
+            unqualified_count = group_messages.filter(quality_status='unqualified').count()
+            spam_count = group_messages.filter(quality_status='spam').count()
+            dialog_count = group_messages.filter(dialog_started=True).count()
+            sale_count = group_messages.filter(sale_made=True).count()
+            
+            efficiency = (qualified_count / total_count * 100) if total_count > 0 else 0
+            
+            detailed_group_stats.append({
+                'name': group.name,
+                'total': total_count,
+                'qualified': qualified_count,
+                'unqualified': unqualified_count,
+                'spam': spam_count,
+                'dialog': dialog_count,
+                'sale': sale_count,
+                'efficiency': round(efficiency, 1),
+            })
+    
+    detailed_group_stats.sort(key=lambda x: x['total'], reverse=True)
+    
+    return JsonResponse({'stats': detailed_group_stats})
+
+
+@login_required
+def statistics_chats_ajax(request):
+    """AJAX загрузка статистики по чатам"""
+    user = request.user
+    period = request.GET.get('period', 'week')
+    
+    # Определяем временные рамки
+    now = timezone.now()
+    if period == 'day':
+        start_date = now - timedelta(days=1)
+    elif period == 'week':
+        start_date = now - timedelta(days=7)
+    elif period == 'month':
+        start_date = now - timedelta(days=30)
+    else:
+        start_date = now - timedelta(days=7)
+    
+    # Получаем сообщения за период
+    messages = ProcessedMessage.objects.filter(user=user, processed_at__gte=start_date)
+    
+    # Детальная статистика по чатам
+    detailed_chat_stats = []
+    user_chat_settings = UserChatSettings.objects.filter(user=user, is_enabled=True).select_related('global_chat')
+    
+    for setting in user_chat_settings:
+        chat = setting.global_chat
+        chat_messages = messages.filter(global_chat=chat)
+        total_count = chat_messages.count()
+        
+        if total_count > 0:
+            qualified_count = chat_messages.filter(quality_status='qualified').count()
+            unqualified_count = chat_messages.filter(quality_status='unqualified').count()
+            spam_count = chat_messages.filter(quality_status='spam').count()
+            dialog_count = chat_messages.filter(dialog_started=True).count()
+            sale_count = chat_messages.filter(sale_made=True).count()
+            
+            efficiency = (qualified_count / total_count * 100) if total_count > 0 else 0
+            
+            detailed_chat_stats.append({
+                'name': chat.name,
+                'total': total_count,
+                'qualified': qualified_count,
+                'unqualified': unqualified_count,
+                'spam': spam_count,
+                'dialog': dialog_count,
+                'sale': sale_count,
+                'efficiency': round(efficiency, 1),
+            })
+    
+    detailed_chat_stats.sort(key=lambda x: x['total'], reverse=True)
+    
+    return JsonResponse({'stats': detailed_chat_stats})
 
 
 @login_required
