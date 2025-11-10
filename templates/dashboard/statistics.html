@@ -172,16 +172,59 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="alert alert-info mt-3">
-                        <strong>Как оценить группу:</strong>
-                        <ul class="mb-0">
-                            <li><span class="badge bg-success">Зеленая</span> (≥50%) - отличная группа, много квалифицированных лидов</li>
-                            <li><span class="badge bg-warning">Желтая</span> (20-49%) - средняя группа, можно оптимизировать</li>
-                            <li><span class="badge bg-danger">Красная</span> (<20%) - низкая эффективность, стоит пересмотреть или удалить</li>
-                        </ul>
-                    </div>
                     {% else %}
                     <p class="text-muted">Нет данных по группам за выбранный период</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Детальная статистика по чатам -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Детальная статистика по чатам</h5>
+                </div>
+                <div class="card-body">
+                    {% if detailed_chat_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Чат</th>
+                                    <th class="text-end">Всего</th>
+                                    <th class="text-end">Квал</th>
+                                    <th class="text-end">Неквал</th>
+                                    <th class="text-end">Спам</th>
+                                    <th class="text-end">Диалоги</th>
+                                    <th class="text-end">Продажи</th>
+                                    <th class="text-end">Эффективность</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for chat in detailed_chat_stats %}
+                                <tr>
+                                    <td><strong>{{ chat.name }}</strong></td>
+                                    <td class="text-end">{{ chat.total }}</td>
+                                    <td class="text-end">{{ chat.qualified }}</td>
+                                    <td class="text-end">{{ chat.unqualified }}</td>
+                                    <td class="text-end">{{ chat.spam }}</td>
+                                    <td class="text-end">{{ chat.dialog }}</td>
+                                    <td class="text-end">{{ chat.sale }}</td>
+                                    <td class="text-end">
+                                        <span class="badge {% if chat.efficiency >= 50 %}bg-success{% elif chat.efficiency >= 20 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ chat.efficiency }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Нет данных по чатам за выбранный период</p>
                     {% endif %}
                 </div>
             </div>

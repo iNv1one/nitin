@@ -891,6 +891,41 @@ def statistics(request):
     # Сортируем по эффективности (от большего к меньшему)
     detailed_group_stats.sort(key=lambda x: x['efficiency'], reverse=True)
     
+    # Детальная статистика по чатам
+    detailed_chat_stats = []
+    
+    # Получаем все глобальные чаты, которые включены у пользователя
+    user_chat_settings = UserChatSettings.objects.filter(user=user, is_enabled=True).select_related('global_chat')
+    
+    for setting in user_chat_settings:
+        chat = setting.global_chat
+        chat_messages = messages.filter(global_chat=chat)
+        total_count = chat_messages.count()
+        
+        if total_count > 0:
+            qualified_count = chat_messages.filter(quality_status='qualified').count()
+            unqualified_count = chat_messages.filter(quality_status='unqualified').count()
+            spam_count = chat_messages.filter(quality_status='spam').count()
+            dialog_count = chat_messages.filter(dialog_started=True).count()
+            sale_count = chat_messages.filter(sale_made=True).count()
+            
+            # Рассчитываем эффективность (квал / всего)
+            efficiency = (qualified_count / total_count * 100) if total_count > 0 else 0
+            
+            detailed_chat_stats.append({
+                'name': chat.name,
+                'total': total_count,
+                'qualified': qualified_count,
+                'unqualified': unqualified_count,
+                'spam': spam_count,
+                'dialog': dialog_count,
+                'sale': sale_count,
+                'efficiency': round(efficiency, 1),
+            })
+    
+    # Сортируем по эффективности (от большего к меньшему)
+    detailed_chat_stats.sort(key=lambda x: x['efficiency'], reverse=True)
+    
     # Статистика по дням (для графика)
     daily_stats = []
     for i in range(7 if period == 'week' else (1 if period == 'day' else 30)):
@@ -918,6 +953,7 @@ def statistics(request):
         'sale_made': sale_made,
         'keyword_group_stats': keyword_group_stats,
         'detailed_group_stats': detailed_group_stats,
+        'detailed_chat_stats': detailed_chat_stats,
         'daily_stats': daily_stats,
         'daily_stats_json': json.dumps(daily_stats),  # Для JavaScript
     }
