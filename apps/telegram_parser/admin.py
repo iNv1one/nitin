@@ -247,6 +247,8 @@ class BotStatusAdmin(admin.ModelAdmin):
     
     readonly_fields = ['last_heartbeat']
     
+    actions = ['restart_parser']
+    
     def status_display(self, obj):
         """Отображение статуса с цветом"""
         if obj.is_running:
@@ -259,6 +261,44 @@ class BotStatusAdmin(admin.ModelAdmin):
         """Отображение времени работы"""
         return obj.uptime
     uptime_display.short_description = 'Время работы'
+    
+    @admin.action(description='🔄 Перезапустить парсер')
+    def restart_parser(self, request, queryset):
+        """Перезапуск парсера через systemctl"""
+        import subprocess
+        try:
+            # Выполняем перезапуск службы
+            result = subprocess.run(
+                ['sudo', 'systemctl', 'restart', 'telegram-parser-celery.service'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode == 0:
+                self.message_user(
+                    request,
+                    "✅ Парсер успешно перезапущен. Новые чаты будут загружены автоматически.",
+                    level='SUCCESS'
+                )
+            else:
+                self.message_user(
+                    request,
+                    f"❌ Ошибка перезапуска: {result.stderr}",
+                    level='ERROR'
+                )
+        except subprocess.TimeoutExpired:
+            self.message_user(
+                request,
+                "⚠️ Превышено время ожидания. Перезапуск может выполняться в фоне.",
+                level='WARNING'
+            )
+        except Exception as e:
+            self.message_user(
+                request,
+                f"❌ Ошибка: {str(e)}",
+                level='ERROR'
+            )
     
     def has_add_permission(self, request):
         """Запрещаем создание нескольких записей статуса"""
@@ -281,6 +321,8 @@ class GlobalChatAdmin(admin.ModelAdmin):
     search_fields = ['name', 'chat_id']
     readonly_fields = ['created_at', 'updated_at']
     
+    actions = ['restart_parser_after_changes']
+    
     fieldsets = (
         ('Информация о чате', {
             'fields': ('chat_id', 'name', 'invite_link', 'is_active')
@@ -290,6 +332,38 @@ class GlobalChatAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    @admin.action(description='🔄 Перезапустить парсер (загрузить новые чаты)')
+    def restart_parser_after_changes(self, request, queryset):
+        """Перезапуск парсера для загрузки новых чатов"""
+        import subprocess
+        try:
+            result = subprocess.run(
+                ['sudo', 'systemctl', 'restart', 'telegram-parser-celery.service'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode == 0:
+                active_chats = queryset.filter(is_active=True).count()
+                self.message_user(
+                    request,
+                    f"✅ Парсер перезапущен! {active_chats} активных чатов будут загружены.",
+                    level='SUCCESS'
+                )
+            else:
+                self.message_user(
+                    request,
+                    f"❌ Ошибка перезапуска: {result.stderr}",
+                    level='ERROR'
+                )
+        except Exception as e:
+            self.message_user(
+                request,
+                f"❌ Ошибка: {str(e)}",
+                level='ERROR'
+            )
     
     def invite_link_display(self, obj):
         """Отображение ссылки на чат"""
