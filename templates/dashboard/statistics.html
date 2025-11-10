@@ -221,7 +221,7 @@
 <script>
 // Функция загрузки статистики по группам
 function loadGroupStats(period) {
-    fetch(`/dashboard/statistics/groups/?period=${period}`)
+    fetch(`/statistics/groups/?period=${period}`)
         .then(response => response.json())
         .then(data => {
             const container = document.getElementById('groupStatsContainer');
@@ -277,7 +277,7 @@ function loadGroupStats(period) {
 
 // Функция загрузки статистики по чатам
 function loadChatStats(period) {
-    fetch(`/dashboard/statistics/chats/?period=${period}`)
+    fetch(`/statistics/chats/?period=${period}`)
         .then(response => response.json())
         .then(data => {
             const container = document.getElementById('chatStatsContainer');
