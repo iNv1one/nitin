@@ -139,7 +139,6 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th style="width: 50px;">Статус</th>
                             <th>Название чата</th>
                             <th style="width: 150px;">ID чата</th>
                             <th style="width: 150px;">Ссылка</th>
@@ -149,20 +148,10 @@
                     <tbody>
                         {% for item in page_obj %}
                         <tr id="chat-row-{{ item.chat.id }}">
-                            <td class="text-center">
-                                <span class="badge {% if item.is_enabled %}bg-success{% else %}bg-secondary{% endif %}" 
-                                      id="status-badge-{{ item.chat.id }}">
-                                    {% if item.is_enabled %}
-                                        <i class="fas fa-check"></i> ВКЛ
-                                    {% else %}
-                                        <i class="fas fa-times"></i> ВЫКЛ
-                                    {% endif %}
-                                </span>
-                            </td>
                             <td>
                                 <strong>{{ item.chat.name }}</strong>
                             </td>
-                            <td class="text-muted">
+                            <td>
                                 <code>{{ item.chat.chat_id }}</code>
                             </td>
                             <td>
@@ -187,7 +176,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
+                            <td colspan="4" class="text-center text-muted py-4">
                                 {% if search_query %}
                                     <i class="fas fa-search"></i> По вашему запросу ничего не найдено
                                 {% else %}
@@ -274,8 +263,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Переключение отдельного чата
 function toggleChat(chatId, checkbox) {
-    const badge = document.getElementById(`status-badge-${chatId}`);
-    
     checkbox.disabled = true;
     
     fetch(`/dashboard/global-chats/${chatId}/toggle/`, {
@@ -288,17 +275,6 @@ function toggleChat(chatId, checkbox) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Обновляем badge
-            if (data.is_enabled) {
-                badge.classList.remove('bg-secondary');
-                badge.classList.add('bg-success');
-                badge.innerHTML = '<i class="fas fa-check"></i> ВКЛ';
-            } else {
-                badge.classList.remove('bg-success');
-                badge.classList.add('bg-secondary');
-                badge.innerHTML = '<i class="fas fa-times"></i> ВЫКЛ';
-            }
-            
             // Показываем уведомление
             showToast(data.message, 'success');
         } else {
