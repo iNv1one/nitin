@@ -266,6 +266,17 @@ class BotStatusAdmin(admin.ModelAdmin):
     def restart_parser(self, request, queryset):
         """Перезапуск парсера через systemctl"""
         import subprocess
+        import platform
+        
+        # Проверяем, что мы на Linux (сервер)
+        if platform.system() != 'Linux':
+            self.message_user(
+                request,
+                "⚠️ Перезапуск парсера доступен только на продакшн сервере (Linux).",
+                level='WARNING'
+            )
+            return
+        
         try:
             # Выполняем перезапуск службы
             result = subprocess.run(
@@ -337,6 +348,17 @@ class GlobalChatAdmin(admin.ModelAdmin):
     def restart_parser_after_changes(self, request, queryset):
         """Перезапуск парсера для загрузки новых чатов"""
         import subprocess
+        import platform
+        
+        # Проверяем, что мы на Linux (сервер)
+        if platform.system() != 'Linux':
+            self.message_user(
+                request,
+                "⚠️ Перезапуск парсера доступен только на продакшн сервере (Linux).",
+                level='WARNING'
+            )
+            return
+        
         try:
             result = subprocess.run(
                 ['sudo', 'systemctl', 'restart', 'telegram-parser-celery.service'],
