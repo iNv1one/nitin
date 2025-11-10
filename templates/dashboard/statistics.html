@@ -8,7 +8,7 @@
         cursor: pointer;
         user-select: none;
         position: relative;
-        padding-right: 20px;
+        padding-right: 25px !important;
     }
     
     .sortable:hover {
@@ -18,18 +18,21 @@
     .sortable::after {
         content: '⇅';
         position: absolute;
-        right: 5px;
+        right: 8px;
         opacity: 0.3;
+        font-size: 14px;
     }
     
     .sortable.asc::after {
         content: '▲';
-        opacity: 1;
+        opacity: 0.8;
+        color: #007bff;
     }
     
     .sortable.desc::after {
         content: '▼';
-        opacity: 1;
+        opacity: 0.8;
+        color: #007bff;
     }
 </style>
 {% endblock %}
