@@ -6,7 +6,7 @@
 <div class="container-fluid mt-4">
     <div class="row mb-4">
         <div class="col-12">
-            <h2>📊 Статистика</h2>
+            <h2>Статистика</h2>
             <p class="text-muted">{{ period_name }}</p>
         </div>
     </div>
@@ -129,12 +129,71 @@
         </div>
     </div>
 
+    <!-- Детальная статистика по группам -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Детальная статистика по группам ключевых слов</h5>
+                </div>
+                <div class="card-body">
+                    {% if detailed_group_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Группа</th>
+                                    <th class="text-end">Всего</th>
+                                    <th class="text-end">Квал</th>
+                                    <th class="text-end">Неквал</th>
+                                    <th class="text-end">Спам</th>
+                                    <th class="text-end">Диалоги</th>
+                                    <th class="text-end">Продажи</th>
+                                    <th class="text-end">Эффективность</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for group in detailed_group_stats %}
+                                <tr>
+                                    <td><strong>{{ group.name }}</strong></td>
+                                    <td class="text-end">{{ group.total }}</td>
+                                    <td class="text-end">{{ group.qualified }}</td>
+                                    <td class="text-end">{{ group.unqualified }}</td>
+                                    <td class="text-end">{{ group.spam }}</td>
+                                    <td class="text-end">{{ group.dialog }}</td>
+                                    <td class="text-end">{{ group.sale }}</td>
+                                    <td class="text-end">
+                                        <span class="badge {% if group.efficiency >= 50 %}bg-success{% elif group.efficiency >= 20 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ group.efficiency }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <strong>Как оценить группу:</strong>
+                        <ul class="mb-0">
+                            <li><span class="badge bg-success">Зеленая</span> (≥50%) - отличная группа, много квалифицированных лидов</li>
+                            <li><span class="badge bg-warning">Желтая</span> (20-49%) - средняя группа, можно оптимизировать</li>
+                            <li><span class="badge bg-danger">Красная</span> (<20%) - низкая эффективность, стоит пересмотреть или удалить</li>
+                        </ul>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Нет данных по группам за выбранный период</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- График по дням -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">📈 Динамика сообщений</h5>
+                    <h5 class="mb-0">Динамика сообщений</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="messagesChart" height="80"></canvas>

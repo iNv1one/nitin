@@ -854,10 +854,42 @@ def statistics(request):
     dialog_started = messages.filter(dialog_started=True).count()
     sale_made = messages.filter(sale_made=True).count()
     
-    # Статистика по группам ключевых слов
+    # Статистика по группам ключевых слов (топ-10)
     keyword_group_stats = messages.values('keyword_group__name').annotate(
         count=Count('id')
     ).order_by('-count')[:10]
+    
+    # Детальная статистика по группам ключевых слов
+    detailed_group_stats = []
+    user_groups = user.keyword_groups.all()
+    
+    for group in user_groups:
+        group_messages = messages.filter(keyword_group=group)
+        total_count = group_messages.count()
+        
+        if total_count > 0:
+            qualified_count = group_messages.filter(quality_status='qualified').count()
+            unqualified_count = group_messages.filter(quality_status='unqualified').count()
+            spam_count = group_messages.filter(quality_status='spam').count()
+            dialog_count = group_messages.filter(dialog_started=True).count()
+            sale_count = group_messages.filter(sale_made=True).count()
+            
+            # Рассчитываем эффективность (квал / всего)
+            efficiency = (qualified_count / total_count * 100) if total_count > 0 else 0
+            
+            detailed_group_stats.append({
+                'name': group.name,
+                'total': total_count,
+                'qualified': qualified_count,
+                'unqualified': unqualified_count,
+                'spam': spam_count,
+                'dialog': dialog_count,
+                'sale': sale_count,
+                'efficiency': round(efficiency, 1),
+            })
+    
+    # Сортируем по эффективности (от большего к меньшему)
+    detailed_group_stats.sort(key=lambda x: x['efficiency'], reverse=True)
     
     # Статистика по дням (для графика)
     daily_stats = []
@@ -885,6 +917,7 @@ def statistics(request):
         'dialog_started': dialog_started,
         'sale_made': sale_made,
         'keyword_group_stats': keyword_group_stats,
+        'detailed_group_stats': detailed_group_stats,
         'daily_stats': daily_stats,
         'daily_stats_json': json.dumps(daily_stats),  # Для JavaScript
     }
