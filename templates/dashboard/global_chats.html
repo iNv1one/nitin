@@ -20,6 +20,59 @@
         </div>
     </div>
 
+    <style>
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #28a745;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-switch input:disabled + .toggle-slider {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+
     <!-- Информационный блок -->
     <div class="alert alert-info" role="alert">
         <i class="fas fa-info-circle"></i>
@@ -90,7 +143,7 @@
                             <th>Название чата</th>
                             <th style="width: 150px;">ID чата</th>
                             <th style="width: 150px;">Ссылка</th>
-                            <th style="width: 100px;">Действия</th>
+                            <th style="width: 80px; text-align: center;">Вкл/Выкл</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,17 +174,15 @@
                                     <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                <button type="button" 
-                                        class="btn btn-sm toggle-chat-btn {% if item.is_enabled %}btn-danger{% else %}btn-success{% endif %}"
-                                        data-chat-id="{{ item.chat.id }}"
-                                        id="toggle-btn-{{ item.chat.id }}">
-                                    {% if item.is_enabled %}
-                                        <i class="fas fa-toggle-off"></i> Выключить
-                                    {% else %}
-                                        <i class="fas fa-toggle-on"></i> Включить
-                                    {% endif %}
-                                </button>
+                            <td class="text-center">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" 
+                                           class="toggle-chat-checkbox"
+                                           data-chat-id="{{ item.chat.id }}"
+                                           id="toggle-{{ item.chat.id }}"
+                                           {% if item.is_enabled %}checked{% endif %}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </td>
                         </tr>
                         {% empty %}
@@ -212,21 +263,20 @@ const csrftoken = getCookie('csrftoken');
 
 // Event delegation для кнопок переключения чатов
 document.addEventListener('DOMContentLoaded', function() {
-    // Обработчик для кнопок переключения отдельных чатов
-    document.querySelectorAll('.toggle-chat-btn').forEach(function(button) {
-        button.addEventListener('click', function() {
+    // Обработчик для toggle switches
+    document.querySelectorAll('.toggle-chat-checkbox').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
             const chatId = this.getAttribute('data-chat-id');
-            toggleChat(chatId);
+            toggleChat(chatId, this);
         });
     });
 });
 
 // Переключение отдельного чата
-function toggleChat(chatId) {
-    const btn = document.getElementById(`toggle-btn-${chatId}`);
+function toggleChat(chatId, checkbox) {
     const badge = document.getElementById(`status-badge-${chatId}`);
     
-    btn.disabled = true;
+    checkbox.disabled = true;
     
     fetch(`/dashboard/global-chats/${chatId}/toggle/`, {
         method: 'POST',
@@ -238,18 +288,12 @@ function toggleChat(chatId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Обновляем UI
+            // Обновляем badge
             if (data.is_enabled) {
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-danger');
-                btn.innerHTML = '<i class="fas fa-toggle-off"></i> Выключить';
                 badge.classList.remove('bg-secondary');
                 badge.classList.add('bg-success');
                 badge.innerHTML = '<i class="fas fa-check"></i> ВКЛ';
             } else {
-                btn.classList.remove('btn-danger');
-                btn.classList.add('btn-success');
-                btn.innerHTML = '<i class="fas fa-toggle-on"></i> Включить';
                 badge.classList.remove('bg-success');
                 badge.classList.add('bg-secondary');
                 badge.innerHTML = '<i class="fas fa-times"></i> ВЫКЛ';
@@ -258,14 +302,18 @@ function toggleChat(chatId) {
             // Показываем уведомление
             showToast(data.message, 'success');
         } else {
+            // Откатываем чекбокс при ошибке
+            checkbox.checked = !checkbox.checked;
             showToast(data.message, 'error');
         }
     })
     .catch(error => {
+        // Откатываем чекбокс при ошибке
+        checkbox.checked = !checkbox.checked;
         showToast('Произошла ошибка при переключении чата', 'error');
     })
     .finally(() => {
-        btn.disabled = false;
+        checkbox.disabled = false;
     });
 }
 
