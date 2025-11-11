@@ -54,8 +54,8 @@
         color: #333;
     }
     
-    /* Кастомный цвет для низкой эффективности */
-    .bg-danger-custom {
+    /* Переопределение цвета bg-danger */
+    .bg-danger {
         background-color: #f7cad2 !important;
         color: #333 !important;
     }
@@ -305,7 +305,7 @@ function loadGroupStats(period) {
                                         <td class="text-end">${group.dialog}</td>
                                         <td class="text-end">${group.sale}</td>
                                         <td class="text-end">
-                                            <span class="badge ${group.efficiency >= 50 ? 'bg-success' : group.efficiency >= 20 ? 'bg-warning' : 'bg-danger-custom'}">
+                                            <span class="badge ${group.efficiency >= 50 ? 'bg-success' : group.efficiency >= 20 ? 'bg-warning' : 'bg-danger'}">
                                                 ${group.efficiency}%
                                             </span>
                                         </td>
@@ -361,7 +361,7 @@ function loadChatStats(period) {
                                         <td class="text-end">${chat.dialog}</td>
                                         <td class="text-end">${chat.sale}</td>
                                         <td class="text-end">
-                                            <span class="badge ${chat.efficiency >= 50 ? 'bg-success' : chat.efficiency >= 20 ? 'bg-warning' : 'bg-danger-custom'}">
+                                            <span class="badge ${chat.efficiency >= 50 ? 'bg-success' : chat.efficiency >= 20 ? 'bg-warning' : 'bg-danger'}">
                                                 ${chat.efficiency}%
                                             </span>
                                         </td>
