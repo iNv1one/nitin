@@ -431,6 +431,7 @@ def processed_messages(request):
                 'sender_name': msg.sender_name,
                 'sender_username': msg.sender_username,
                 'message_text': msg.message_text,
+                'message_link': msg.message_link,
                 'matched_keywords': msg.matched_keywords,
                 'ai_approved': True,
                 'ai_result': msg.ai_result,
@@ -458,6 +459,7 @@ def processed_messages(request):
                 'sender_name': msg.sender_name,
                 'sender_username': msg.sender_username,
                 'message_text': msg.message_text,
+                'message_link': '',  # У rejected нет message_link, но можно сгенерировать
                 'matched_keywords': msg.matched_keywords,
                 'ai_approved': False,
                 'ai_rejection_reason': msg.ai_rejection_reason,

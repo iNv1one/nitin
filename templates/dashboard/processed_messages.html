@@ -166,8 +166,8 @@
                                 </div>
                             </div>
                             
-                            {% if message.original_object.message_link %}
-                            <a href="{{ message.original_object.message_link }}" target="_blank" class="btn btn-sm btn-outline-primary w-100 mb-2">
+                            {% if message.message_link %}
+                            <a href="{{ message.message_link }}" target="_blank" class="btn btn-sm btn-outline-primary w-100 mb-2">
                                 <i class="fas fa-external-link-alt"></i> Открыть в Telegram
                             </a>
                             {% endif %}
