@@ -146,29 +146,13 @@
                 <div class="card-body">
                     <table class="table table-striped">
                         <tbody>
-                            <tr>
-                                <td>Всего сообщений с ключевыми словами</td>
+                            <tr class="table-primary">
+                                <td><strong>Всего сообщений с ключевыми словами</strong></td>
                                 <td class="text-end"><strong>{{ total_messages }}</strong></td>
-                                <td class="text-end">100%</td>
+                                <td class="text-end"><strong>100%</strong></td>
                             </tr>
                             <tr>
-                                <td>ИИ одобрил</td>
-                                <td class="text-end"><strong>{{ ai_approved }}</strong></td>
-                                <td class="text-end">
-                                    {% if total_messages > 0 %}
-                                    {% widthratio ai_approved total_messages 100 %}%
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>ИИ отверг</td>
-                                <td class="text-end"><strong>{{ ai_rejected }}</strong></td>
-                                <td class="text-end">
-                                    <small class="text-muted">(не логируется)</small>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Без AI проверки</td>
+                                <td>Не требуют проверки ИИ</td>
                                 <td class="text-end"><strong>{{ messages_without_ai }}</strong></td>
                                 <td class="text-end">
                                     {% if total_messages > 0 %}
@@ -177,12 +161,32 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>Написали через sender-аккаунт</td>
+                                <td>Отклонено фильтром ИИ</td>
+                                <td class="text-end"><strong>{{ ai_rejected }}</strong></td>
+                                <td class="text-end">
+                                    {% if total_messages > 0 %}
+                                    {% widthratio ai_rejected total_messages 100 %}%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Прошли фильтр ИИ</td>
+                                <td class="text-end"><strong>{{ ai_approved }}</strong></td>
+                                <td class="text-end">
+                                    {% if total_messages > 0 %}
+                                    {% widthratio ai_approved total_messages 100 %}%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="table-info">
+                                <td><strong>Отправлено сообщений через sender</strong></td>
                                 <td class="text-end"><strong>{{ sender_contacted }}</strong></td>
                                 <td class="text-end">
+                                    <strong>
                                     {% if total_messages > 0 %}
                                     {% widthratio sender_contacted total_messages 100 %}%
                                     {% endif %}
+                                    </strong>
                                 </td>
                             </tr>
                         </tbody>

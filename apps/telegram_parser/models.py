@@ -519,6 +519,59 @@ class BotStatus(models.Model):
         return time_diff.total_seconds() < 300  # 5 минут
 
 
+class RejectedMessage(models.Model):
+    """Сообщения, отклоненные AI фильтром"""
+    
+    # Relations
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Пользователь",
+        related_name="rejected_messages"
+    )
+    keyword_group = models.ForeignKey(
+        KeywordGroup,
+        on_delete=models.CASCADE,
+        verbose_name="Группа ключевых слов",
+        related_name="rejected_messages"
+    )
+    global_chat = models.ForeignKey(
+        GlobalChat,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name="Глобальный чат",
+        related_name="rejected_messages"
+    )
+    
+    # Message data
+    message_id = models.BigIntegerField(verbose_name="ID сообщения")
+    chat_id = models.BigIntegerField(verbose_name="ID чата")
+    sender_id = models.BigIntegerField(null=True, blank=True, verbose_name="ID отправителя")
+    sender_name = models.CharField(max_length=255, blank=True, verbose_name="Имя отправителя")
+    sender_username = models.CharField(max_length=255, blank=True, verbose_name="Username отправителя")
+    message_text = models.TextField(verbose_name="Текст сообщения")
+    
+    # Rejection data
+    matched_keywords = models.JSONField(default=list, verbose_name="Найденные ключевые слова")
+    ai_rejection_reason = models.TextField(blank=True, verbose_name="Причина отклонения AI")
+    
+    # Timestamps
+    rejected_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата отклонения")
+    
+    class Meta:
+        verbose_name = "Отклоненное сообщение"
+        verbose_name_plural = "Отклоненные сообщения"
+        ordering = ['-rejected_at']
+        unique_together = ['user', 'message_id', 'chat_id', 'keyword_group']
+        indexes = [
+            models.Index(fields=['user', 'rejected_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - Rejected {self.message_id}"
+
+
 class RawMessage(models.Model):
     """Все сырые сообщения, полученные парсером (для отладки)"""
     

@@ -10,9 +10,8 @@ from datetime import timedelta
 import json
 import logging
 
-from apps.telegram_parser.models import KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus, GlobalChat, UserChatSettings, RawMessage, MessageTemplate
+from apps.telegram_parser.models import KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus, GlobalChat, UserChatSettings, RawMessage, MessageTemplate, RejectedMessage
 from apps.users.models import User
-
 logger = logging.getLogger(__name__)
 
 
@@ -845,9 +844,11 @@ def statistics(request):
     # Сообщения без AI проверки (где AI фильтр не был включен)
     messages_without_ai = messages.filter(ai_result='').count()
     
-    # ИИ отверг = 0 (отклоненные сообщения не попадают в ProcessedMessage)
-    # В будущем можно добавить отдельную таблицу для логирования отклонений
-    ai_rejected_count = 0
+    # Отклоненные AI сообщения из отдельной таблицы
+    ai_rejected_count = RejectedMessage.objects.filter(
+        user=user,
+        rejected_at__gte=start_date
+    ).count()
     
     # Сообщения, после которых написали пользователю через sender-аккаунт
     sender_contacted = messages.filter(message_sent=True).count()

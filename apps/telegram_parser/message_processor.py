@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional
 from django.conf import settings
 from django.utils import timezone
 from django.db import transaction
-from .models import GlobalChat, UserChatSettings, KeywordGroup, ProcessedMessage
+from .models import GlobalChat, UserChatSettings, KeywordGroup, ProcessedMessage, RejectedMessage
 import telebot
 import re
 
@@ -104,6 +104,10 @@ class MessageProcessor:
                         
                         if not ai_approved:
                             logger.info(f"❌ Сообщение отклонено AI фильтром для user {user_id}")
+                            # Сохраняем отклоненное сообщение
+                            self._save_rejected_message(
+                                user_data, group, message_data, matched_keywords, ai_result
+                            )
                     
                     if ai_approved:
                         logger.info(f"✅ Сообщение прошло все проверки для user {user_id}")
@@ -262,6 +266,47 @@ class MessageProcessor:
                 
         except Exception as e:
             logger.error(f"Error saving processed message: {e}")
+            return None
+    
+    def _save_rejected_message(
+        self,
+        user_data: Dict,
+        keyword_group: KeywordGroup,
+        message_data: Dict[str, Any],
+        matched_keywords: List[str],
+        ai_rejection_reason: str
+    ) -> Optional[RejectedMessage]:
+        """Сохраняем отклоненное AI сообщение"""
+        try:
+            with transaction.atomic():
+                # Получаем GlobalChat
+                global_chat = GlobalChat.objects.get(id=user_data['global_chat__id'])
+                
+                message_id = message_data['message_id']
+                chat_id = message_data['chat_id']
+                
+                # Используем get_or_create для избежания дубликатов
+                rejected_msg, created = RejectedMessage.objects.get_or_create(
+                    user_id=user_data['user__id'],
+                    message_id=message_id,
+                    chat_id=chat_id,
+                    keyword_group=keyword_group,
+                    defaults={
+                        'global_chat': global_chat,
+                        'sender_id': message_data.get('sender_id'),
+                        'sender_name': self._format_sender_name(message_data),
+                        'sender_username': message_data.get('sender_username', ''),
+                        'message_text': message_data.get('text', ''),
+                        'matched_keywords': matched_keywords,
+                        'ai_rejection_reason': ai_rejection_reason,
+                    }
+                )
+                
+                logger.info(f"{'Saved' if created else 'Found existing'} rejected message {message_id} for user {user_data['user__id']}")
+                return rejected_msg
+                
+        except Exception as e:
+            logger.error(f"Error saving rejected message: {e}")
             return None
     
     def _format_sender_name(self, message_data: Dict[str, Any]) -> str:

@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.db.models import Count, Q
 from .models import (
     KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,
-    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate
+    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate, RejectedMessage
 )
 
 
@@ -599,6 +599,57 @@ class MessageTemplateAdmin(admin.ModelAdmin):
     )
     
     readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(RejectedMessage)
+class RejectedMessageAdmin(admin.ModelAdmin):
+    """Админка для отклоненных сообщений"""
+    
+    list_display = [
+        'id', 'user', 'keyword_group', 'global_chat', 
+        'sender_display', 'short_text', 'rejected_at'
+    ]
+    list_filter = ['rejected_at', 'user__subscription_plan', 'keyword_group']
+    search_fields = [
+        'message_text', 'sender_name', 'sender_username', 
+        'user__username', 'ai_rejection_reason'
+    ]
+    list_select_related = ['user', 'keyword_group', 'global_chat']
+    date_hierarchy = 'rejected_at'
+    
+    fieldsets = (
+        ('Информация о сообщении', {
+            'fields': ('user', 'keyword_group', 'global_chat', 'message_id', 'chat_id')
+        }),
+        ('Отправитель', {
+            'fields': ('sender_id', 'sender_name', 'sender_username')
+        }),
+        ('Содержание', {
+            'fields': ('message_text', 'matched_keywords')
+        }),
+        ('Причина отклонения', {
+            'fields': ('ai_rejection_reason',)
+        }),
+        ('Метаданные', {
+            'fields': ('rejected_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ['rejected_at']
+    
+    def sender_display(self, obj):
+        """Отображение отправителя"""
+        if obj.sender_username:
+            return f"@{obj.sender_username}"
+        return obj.sender_name or f"ID: {obj.sender_id}"
+    sender_display.short_description = 'Отправитель'
+    
+    def short_text(self, obj):
+        """Краткий текст сообщения"""
+        return obj.message_text[:100] + '...' if len(obj.message_text) > 100 else obj.message_text
+    short_text.short_description = 'Текст сообщения'
+
 
 # Настройка админки
 admin.site.site_header = "Telegram Parser SaaS"
