@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Глобальные чаты - Telegram Parser{% endblock %}
+{% block title %}Чаты - Telegram Parser{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -21,7 +21,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">
-            <i class="fas fa-globe"></i> Глобальные чаты
+            <i class="fas fa-comments"></i> Чаты
         </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
@@ -92,41 +92,6 @@
             cursor: not-allowed;
         }
     </style>
-
-    <!-- Информационный блок -->
-    <div class="alert alert-info" role="alert">
-        <i class="fas fa-info-circle"></i>
-        <strong>О глобальных чатах:</strong> Это общие чаты, которые парсятся единым ботом для всех пользователей системы.
-        Вы можете включить или выключить любой чат, и бот будет обрабатывать сообщения только из включенных вами чатов.
-    </div>
-
-    <!-- Статистика -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">Всего чатов</h5>
-                    <p class="card-text display-6">{{ total_chats }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center border-success">
-                <div class="card-body">
-                    <h5 class="card-title text-success">Включено</h5>
-                    <p class="card-text display-6 text-success">{{ enabled_count }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center border-danger">
-                <div class="card-body">
-                    <h5 class="card-title text-danger">Выключено</h5>
-                    <p class="card-text display-6 text-danger">{{ disabled_count }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Поиск -->
     <div class="row mb-3">

@@ -118,7 +118,7 @@
                     </a>
                     <a class="nav-link {% if 'global_chat' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:global_chats' %}">
-                        <i class="fas fa-globe"></i> Глобальные чаты
+                        <i class="fas fa-comments"></i> Чаты
                     </a>
                     <a class="nav-link {% if 'message' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:processed_messages' %}">
