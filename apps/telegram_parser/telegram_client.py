@@ -75,16 +75,53 @@ class MasterTelegramParser:
                 return False
             
             logger.info(f"📺 Starting monitoring for {len(self.monitored_chats)} chats")
-            logger.info(f"📋 Monitored chat IDs: {self.monitored_chats}")
             
-            # Получаем подробную информацию о каждом чате
-            for chat_id in self.monitored_chats[:5]:  # Логируем первые 5 для примера
+            # Проверяем доступность ВСЕХ чатов
+            logger.info("� ПРОВЕРКА ДОСТУПНОСТИ ЧАТОВ:")
+            accessible_chats = []
+            inaccessible_chats = []
+            
+            for idx, chat_id in enumerate(self.monitored_chats, 1):
                 try:
                     chat = await self.client.get_entity(chat_id)
                     chat_title = getattr(chat, 'title', 'Unknown')
-                    logger.info(f"  ✓ Chat ID {chat_id}: {chat_title}")
+                    chat_username = getattr(chat, 'username', None)
+                    accessible_chats.append(chat_id)
+                    
+                    if idx <= 20:  # Логируем первые 20
+                        username_str = f"@{chat_username}" if chat_username else "приватный"
+                        logger.info(f"  ✅ {idx}. {chat_title} (ID: {chat_id}, {username_str})")
                 except Exception as e:
-                    logger.warning(f"  ✗ Chat ID {chat_id}: Failed to get info - {e}")
+                    inaccessible_chats.append((chat_id, str(e)))
+                    error_msg = str(e)
+                    if "not found" in error_msg.lower() or "invalid" in error_msg.lower():
+                        logger.warning(f"  ❌ {idx}. Chat ID {chat_id}: БОТ УДАЛЁН ИЗ ЧАТА - {error_msg}")
+                    else:
+                        logger.warning(f"  ⚠️ {idx}. Chat ID {chat_id}: Ошибка доступа - {error_msg}")
+            
+            # Итоговая статистика
+            logger.info("=" * 80)
+            logger.info(f"📊 ИТОГОВАЯ СТАТИСТИКА ЧАТОВ:")
+            logger.info(f"   ✅ Доступных чатов: {len(accessible_chats)}")
+            logger.info(f"   ❌ Недоступных чатов: {len(inaccessible_chats)}")
+            logger.info(f"   📈 Процент доступности: {len(accessible_chats) / len(self.monitored_chats) * 100:.1f}%")
+            
+            if inaccessible_chats:
+                logger.warning(f"⚠️ НЕДОСТУПНЫЕ ЧАТЫ (возможно бот удалён):")
+                for chat_id, error in inaccessible_chats[:10]:
+                    logger.warning(f"   - Chat ID {chat_id}: {error}")
+                if len(inaccessible_chats) > 10:
+                    logger.warning(f"   ... и ещё {len(inaccessible_chats) - 10} чатов")
+                
+                # Автоматически деактивируем недоступные чаты
+                await self.cleanup_inaccessible_chats(inaccessible_chats)
+            
+            logger.info("=" * 80)
+            
+            # Обновляем список только доступными чатами
+            if accessible_chats:
+                self.monitored_chats = accessible_chats
+                logger.info(f"🎯 Будет мониториться {len(self.monitored_chats)} доступных чатов")
             
             # Обновляем статус
             await self._update_bot_status(
@@ -132,12 +169,25 @@ class MasterTelegramParser:
         @sync_to_async
         def get_chats():
             # Получаем все активные глобальные чаты
-            # Будем мониторить все, а фильтрацию по пользователям делаем при обработке
-            return list(
-                GlobalChat.objects.filter(is_active=True)
-                .values_list('chat_id', flat=True)
-                .distinct()
-            )
+            chats = GlobalChat.objects.filter(is_active=True)
+            chat_ids = list(chats.values_list('chat_id', flat=True).distinct())
+            
+            # Детальная информация о чатах
+            logger.info("=" * 80)
+            logger.info(f"📊 ЗАГРУЗКА ЧАТОВ ИЗ БАЗЫ ДАННЫХ:")
+            logger.info(f"   Всего активных GlobalChat записей: {chats.count()}")
+            logger.info(f"   Уникальных chat_id: {len(chat_ids)}")
+            
+            # Показываем первые 10 чатов для проверки
+            for idx, chat in enumerate(chats[:10], 1):
+                logger.info(f"   {idx}. {chat.name} (ID: {chat.chat_id})")
+            
+            if chats.count() > 10:
+                logger.info(f"   ... и ещё {chats.count() - 10} чатов")
+            
+            logger.info("=" * 80)
+            
+            return chat_ids
         
         return await get_chats()
     
@@ -157,12 +207,21 @@ class MasterTelegramParser:
         try:
             # Проверяем, что сообщение из мониторимого чата
             if not hasattr(self, 'monitored_chats') or event.chat_id not in self.monitored_chats:
-                logger.debug(f"⏩ Message from non-monitored chat {event.chat_id}, skipping")
+                logger.debug(f"⏩ Сообщение из НЕмониторимого чата {event.chat_id}, пропускаем")
                 return
             
             message = event.message
             
-            logger.info(f"🔔 NEW MESSAGE received! Chat ID: {event.chat_id}, Message ID: {message.id}")
+            # Получаем информацию о чате для лога
+            chat_info = "Unknown"
+            try:
+                chat = await event.get_chat()
+                chat_info = f"{getattr(chat, 'title', 'Unknown')} (ID: {event.chat_id})"
+            except:
+                chat_info = f"Chat ID: {event.chat_id}"
+            
+            logger.info(f"🔔 НОВОЕ СООБЩЕНИЕ! Чат: {chat_info}, Message ID: {message.id}")
+            logger.info(f"   Текст: {(message.text or '')[:100]}...")
             
             # Базовая информация о сообщении
             message_data = {
@@ -285,15 +344,69 @@ class MasterTelegramParser:
             last_error_at=timezone.now()
         )
     
+    async def cleanup_inaccessible_chats(self, inaccessible_chat_ids):
+        """Пометить недоступные чаты как неактивные в базе данных"""
+        from asgiref.sync import sync_to_async
+        from .models import GlobalChat
+        
+        if not inaccessible_chat_ids:
+            return
+        
+        @sync_to_async
+        def deactivate_chats():
+            # Деактивируем недоступные чаты
+            updated = GlobalChat.objects.filter(
+                chat_id__in=[chat_id for chat_id, _ in inaccessible_chat_ids],
+                is_active=True
+            ).update(is_active=False)
+            
+            logger.info(f"🗑️ Автоматически деактивировано {updated} недоступных чатов в базе данных")
+            
+            return updated
+        
+        return await deactivate_chats()
+    
     async def _heartbeat_loop(self):
         """Цикл heartbeat для обновления статуса"""
+        heartbeat_counter = 0
         while self.is_running:
             try:
                 await asyncio.sleep(60)  # Каждую минуту
+                heartbeat_counter += 1
+                
                 await self._update_bot_status(last_heartbeat=timezone.now())
                 logger.debug("💓 Heartbeat updated")
+                
+                # Каждые 5 минут перезагружаем список чатов
+                if heartbeat_counter % 5 == 0:
+                    await self.reload_monitored_chats()
+                    
             except Exception as e:
                 logger.error(f"❌ Heartbeat error: {e}")
+    
+    async def reload_monitored_chats(self):
+        """Перезагрузка списка мониторимых чатов"""
+        try:
+            logger.info("🔄 Reloading monitored chats list...")
+            new_chats = await self._get_all_monitored_chats()
+            
+            # Проверяем изменения
+            added = set(new_chats) - set(self.monitored_chats)
+            removed = set(self.monitored_chats) - set(new_chats)
+            
+            if added:
+                logger.info(f"✅ Added new chats to monitoring: {added}")
+            if removed:
+                logger.info(f"⚠️ Removed chats from monitoring: {removed}")
+            
+            if added or removed:
+                self.monitored_chats = new_chats
+                logger.info(f"📺 Now monitoring {len(self.monitored_chats)} chats")
+            else:
+                logger.debug("✔️ No changes in monitored chats")
+                
+        except Exception as e:
+            logger.error(f"❌ Error reloading monitored chats: {e}")
     
     async def stop(self):
         """Остановка парсера"""
