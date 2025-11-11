@@ -100,26 +100,21 @@ class MessageProcessor:
                         logger.info(f"🤖 AI проверка включена для группы '{group.name}' (user {user_id})")
                         ai_approved, ai_result = self._check_ai_filter(message_text, group.ai_prompt)
                         logger.info(f"🤖 AI ответ: '{ai_result}' | Одобрено: {ai_approved}")
-                        
-                        if not ai_approved:
-                            logger.info(f"❌ Сообщение отклонено AI фильтром для user {user_id}")
-                            # Сохраняем отклоненное сообщение
-                            self._save_rejected_message(
-                                user_data, group, message_data, matched_keywords, ai_result
-                            )
                     
-                    if ai_approved:
-                        logger.info(f"✅ Сообщение прошло все проверки для user {user_id}")
-                        # Сохраняем в БД
-                        processed_msg = self._save_processed_message(
-                            user_data, group, message_data, matched_keywords, ai_result
-                        )
-                        
-                        # Отправляем уведомление
-                        if processed_msg:
-                            logger.info(f"📨 Отправка уведомления в Telegram для user {user_id}")
-                            self._send_notification(user_data, processed_msg, group)
-                            logger.info(f"✅ Уведомление отправлено для сообщения {processed_msg.id}")
+                    # Всегда сохраняем сообщение в ProcessedMessage
+                    logger.info(f"✅ Сообщение прошло проверку ключевых слов для user {user_id}")
+                    # Сохраняем в БД
+                    processed_msg = self._save_processed_message(
+                        user_data, group, message_data, matched_keywords, ai_result, ai_approved
+                    )
+                    
+                    # Отправляем уведомление только если AI одобрил (или AI не используется)
+                    if processed_msg and ai_approved:
+                        logger.info(f"📨 Отправка уведомления в Telegram для user {user_id}")
+                        self._send_notification(user_data, processed_msg, group)
+                        logger.info(f"✅ Уведомление отправлено для сообщения {processed_msg.id}")
+                    elif processed_msg and not ai_approved:
+                        logger.info(f"⚠️ Уведомление НЕ отправлено - AI отклонил сообщение {processed_msg.id}")
                 
         except Exception as e:
             logger.error(f"Error processing message for user {user_data.get('user__id')}: {e}")
@@ -209,7 +204,8 @@ class MessageProcessor:
         keyword_group: KeywordGroup, 
         message_data: Dict[str, Any], 
         matched_keywords: List[str],
-        ai_result: str
+        ai_result: str,
+        ai_approved: bool = True
     ) -> Optional[ProcessedMessage]:
         """Сохраняем обработанное сообщение в БД"""
         try:
@@ -244,6 +240,7 @@ class MessageProcessor:
                         'message_link': message_link,
                         'matched_keywords': matched_keywords,
                         'ai_result': ai_result,
+                        'ai_approved': ai_approved,
                         'notification_sent': False
                     }
                 )

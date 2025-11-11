@@ -364,7 +364,7 @@ def delete_monitored_chat(request, chat_id):
 @login_required
 def processed_messages(request):
     """
-    Просмотр всех сообщений - обработанных и отклоненных (CRM)
+    Просмотр всех сообщений (CRM)
     """
     user = request.user
     
@@ -375,112 +375,72 @@ def processed_messages(request):
     date_filter = request.GET.get('date')
     progress_filter = request.GET.get('progress')
     
-    # Получаем обработанные сообщения (одобренные ИИ)
-    processed_qs = ProcessedMessage.objects.filter(user=user)
+    # Получаем все сообщения
+    messages_qs = ProcessedMessage.objects.filter(user=user)
+    
+    # Фильтр по статусу AI
+    if ai_status_filter == 'approved':
+        messages_qs = messages_qs.filter(ai_approved=True)
+    elif ai_status_filter == 'rejected':
+        messages_qs = messages_qs.filter(ai_approved=False)
     
     if status_filter:
-        processed_qs = processed_qs.filter(quality_status=status_filter)
+        messages_qs = messages_qs.filter(quality_status=status_filter)
     
     if progress_filter:
         if progress_filter == 'dialog':
-            processed_qs = processed_qs.filter(dialog_started=True)
+            messages_qs = messages_qs.filter(dialog_started=True)
         elif progress_filter == 'sale':
-            processed_qs = processed_qs.filter(sale_made=True)
+            messages_qs = messages_qs.filter(sale_made=True)
     
     if keyword_filter:
-        processed_qs = processed_qs.filter(keyword_group__name__icontains=keyword_filter)
+        messages_qs = messages_qs.filter(keyword_group__name__icontains=keyword_filter)
     
     if date_filter:
         if date_filter == 'today':
-            processed_qs = processed_qs.filter(processed_at__date=timezone.now().date())
+            messages_qs = messages_qs.filter(processed_at__date=timezone.now().date())
         elif date_filter == 'week':
             week_ago = timezone.now() - timedelta(days=7)
-            processed_qs = processed_qs.filter(processed_at__gte=week_ago)
+            messages_qs = messages_qs.filter(processed_at__gte=week_ago)
         elif date_filter == 'month':
             month_ago = timezone.now() - timedelta(days=30)
-            processed_qs = processed_qs.filter(processed_at__gte=month_ago)
+            messages_qs = messages_qs.filter(processed_at__gte=month_ago)
     
-    # Получаем отклоненные сообщения
-    rejected_qs = RejectedMessage.objects.filter(user=user)
+    # Сортируем по дате
+    messages_qs = messages_qs.order_by('-processed_at')
     
-    if keyword_filter:
-        rejected_qs = rejected_qs.filter(keyword_group__name__icontains=keyword_filter)
+    # Подсчитываем количество
+    total_count = messages_qs.count()
+    approved_count = ProcessedMessage.objects.filter(user=user, ai_approved=True).count()
+    rejected_count = ProcessedMessage.objects.filter(user=user, ai_approved=False).count()
     
-    if date_filter:
-        if date_filter == 'today':
-            rejected_qs = rejected_qs.filter(rejected_at__date=timezone.now().date())
-        elif date_filter == 'week':
-            week_ago = timezone.now() - timedelta(days=7)
-            rejected_qs = rejected_qs.filter(rejected_at__gte=week_ago)
-        elif date_filter == 'month':
-            month_ago = timezone.now() - timedelta(days=30)
-            rejected_qs = rejected_qs.filter(rejected_at__gte=month_ago)
-    
-    # Объединяем в один список с флагом типа
+    # Преобразуем в список словарей для единообразия с шаблоном
     all_messages = []
-    
-    # Добавляем обработанные сообщения
-    if ai_status_filter != 'rejected':
-        for msg in processed_qs:
-            all_messages.append({
-                'type': 'processed',
-                'id': msg.id,
-                'message_id': msg.message_id,
-                'chat_id': msg.chat_id,
-                'sender_id': msg.sender_id,
-                'sender_name': msg.sender_name,
-                'sender_username': msg.sender_username,
-                'message_text': msg.message_text,
-                'message_link': msg.message_link,
-                'matched_keywords': msg.matched_keywords,
-                'ai_approved': True,
-                'ai_result': msg.ai_result,
-                'ai_score': msg.ai_score,
-                'quality_status': msg.quality_status,
-                'dialog_started': msg.dialog_started,
-                'sale_made': msg.sale_made,
-                'message_sent': msg.message_sent,
-                'notes': msg.notes,
-                'global_chat': msg.global_chat,
-                'keyword_group': msg.keyword_group,
-                'date': msg.processed_at,
-                'original_object': msg,
-            })
-    
-    # Добавляем отклоненные сообщения
-    if ai_status_filter != 'approved':
-        for msg in rejected_qs:
-            all_messages.append({
-                'type': 'rejected',
-                'id': msg.id,
-                'message_id': msg.message_id,
-                'chat_id': msg.chat_id,
-                'sender_id': msg.sender_id,
-                'sender_name': msg.sender_name,
-                'sender_username': msg.sender_username,
-                'message_text': msg.message_text,
-                'message_link': '',
-                'matched_keywords': msg.matched_keywords,
-                'ai_approved': False,
-                'ai_rejection_reason': msg.ai_rejection_reason,
-                'quality_status': 'none',  # для отклоненных всегда none
-                'dialog_started': False,
-                'sale_made': False,
-                'message_sent': False,
-                'notes': '',
-                'global_chat': msg.global_chat,
-                'keyword_group': msg.keyword_group,
-                'date': msg.rejected_at,
-                'original_object': msg,
-            })
-    
-    # Сортируем по дате (новые первыми)
-    all_messages.sort(key=lambda x: x['date'], reverse=True)
-    
-    # Подсчитываем общее количество
-    total_count = len(all_messages)
-    approved_count = sum(1 for m in all_messages if m['ai_approved'])
-    rejected_count = sum(1 for m in all_messages if not m['ai_approved'])
+    for msg in messages_qs:
+        all_messages.append({
+            'type': 'processed',
+            'id': msg.id,
+            'message_id': msg.message_id,
+            'chat_id': msg.chat_id,
+            'sender_id': msg.sender_id,
+            'sender_name': msg.sender_name,
+            'sender_username': msg.sender_username,
+            'message_text': msg.message_text,
+            'message_link': msg.message_link,
+            'matched_keywords': msg.matched_keywords,
+            'ai_approved': msg.ai_approved,
+            'ai_result': msg.ai_result,
+            'ai_score': msg.ai_score,
+            'quality_status': msg.quality_status,
+            'dialog_started': msg.dialog_started,
+            'sale_made': msg.sale_made,
+            'message_sent': msg.message_sent,
+            'notes': msg.notes,
+            'global_chat': msg.global_chat,
+            'keyword_group': msg.keyword_group,
+            'date': msg.processed_at,
+            'original_object': msg,
+        })
     
     # Пагинация
     paginator = Paginator(all_messages, 20)
@@ -514,35 +474,8 @@ def processed_messages(request):
 def update_message_status(request, message_id):
     """
     Обновление статуса сообщения
-    Может работать как с ProcessedMessage, так и конвертировать RejectedMessage в ProcessedMessage
     """
-    # Сначала пытаемся найти ProcessedMessage
-    try:
-        message = ProcessedMessage.objects.get(id=message_id, user=request.user)
-    except ProcessedMessage.DoesNotExist:
-        # Если не нашли, может это RejectedMessage нужно конвертировать
-        try:
-            rejected = RejectedMessage.objects.get(id=message_id, user=request.user)
-            # Конвертируем RejectedMessage в ProcessedMessage
-            message = ProcessedMessage.objects.create(
-                user=rejected.user,
-                keyword_group=rejected.keyword_group,
-                global_chat=rejected.global_chat,
-                message_id=rejected.message_id,
-                chat_id=rejected.chat_id,
-                sender_id=rejected.sender_id,
-                sender_name=rejected.sender_name,
-                sender_username=rejected.sender_username,
-                message_text=rejected.message_text,
-                matched_keywords=rejected.matched_keywords,
-                ai_result=f"Конвертировано из отклоненного. Причина отклонения: {rejected.ai_rejection_reason}",
-                quality_status='none',
-                processed_at=timezone.now(),
-            )
-            # Удаляем rejected сообщение
-            rejected.delete()
-        except RejectedMessage.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Сообщение не найдено'}, status=404)
+    message = get_object_or_404(ProcessedMessage, id=message_id, user=request.user)
     
     # Обновление quality_status
     quality_status = request.POST.get('quality_status')

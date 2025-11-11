@@ -331,6 +331,11 @@ class ProcessedMessage(models.Model):
         verbose_name="AI Score",
         help_text="Оценка релевантности от 0 до 1"
     )
+    ai_approved = models.BooleanField(
+        default=True,
+        verbose_name="Одобрено AI",
+        help_text="True если AI одобрил сообщение или AI не использовался"
+    )
     
     # Status flags
     notification_sent = models.BooleanField(
