@@ -114,15 +114,13 @@
         </div>
         <div class="col-md-6 d-flex align-items-center justify-content-end">
             <div class="me-4">
-                <i class="fas fa-list text-secondary"></i>
                 <strong>Всего:</strong> <span class="badge bg-secondary">{{ total_chats }}</span>
             </div>
             <div class="me-4">
-                <i class="fas fa-check-circle text-success"></i>
                 <strong>Включено:</strong> <span class="badge bg-success">{{ enabled_count }}</span>
             </div>
             <div>
-                <i class="fas fa-times-circle text-danger"></i>
+                <strong>Выключено:</strong> <span class="badge bg-danger">{{ disabled_count }}</span>
                 <strong>Выключено:</strong> <span class="badge bg-danger">{{ disabled_count }}</span>
             </div>
         </div>
@@ -138,7 +136,7 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>Название чата</th>
+                            <th style="padding-left: 20px;">Название чата</th>
                             <th style="width: 150px;">ID чата</th>
                             <th style="width: 150px;">Ссылка</th>
                             <th style="width: 80px; text-align: center;">Вкл/Выкл</th>
@@ -147,11 +145,11 @@
                     <tbody>
                         {% for item in page_obj %}
                         <tr id="chat-row-{{ item.chat.id }}">
-                            <td>
-                                <strong>{{ item.chat.name }}</strong>
+                            <td style="padding-left: 20px;">
+                                {{ item.chat.name }}
                             </td>
                             <td>
-                                <code>{{ item.chat.chat_id }}</code>
+                                <code style="color: #212529;">{{ item.chat.chat_id }}</code>
                             </td>
                             <td>
                                 {% if item.chat.invite_link %}
