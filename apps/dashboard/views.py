@@ -239,6 +239,8 @@ def delete_keyword_group(request, group_id):
     return redirect('dashboard:keyword_groups')
 
 
+
+
 @login_required
 def monitored_chats(request):
     """

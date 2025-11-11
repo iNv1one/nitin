@@ -2,6 +2,61 @@
 
 {% block title %}Редактировать группу - NITIN{% endblock %}
 
+{% block extra_head %}
+<style>
+/* Стили для кастомного toggle-switch (точно как в Chats) */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #28a745;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+input:disabled + .slider {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-lg-8 offset-lg-2">
@@ -33,10 +88,10 @@
                     <div class="mb-3">
                         <label class="form-label d-flex align-items-center">
                             <i class="fas fa-robot me-2"></i> AI фильтр
-                            <div class="form-check form-switch ms-3">
-                                <input class="form-check-input" type="checkbox" role="switch" id="use_ai_filter" name="use_ai_filter" {% if group.use_ai_filter %}checked{% endif %}>
-                                <label class="form-check-label ms-2" for="use_ai_filter" id="ai_filter_label">{% if group.use_ai_filter %}Включено{% else %}Выключено{% endif %}</label>
-                            </div>
+                        </label>
+                        <label class="toggle-switch ms-3">
+                            <input type="checkbox" id="use_ai_filter" name="use_ai_filter" {% if group.use_ai_filter %}checked{% endif %}>
+                            <span class="slider"></span>
                         </label>
                     </div>
                     
@@ -48,10 +103,10 @@
                     <div class="mb-3">
                         <label class="form-label d-flex align-items-center">
                             Статус группы
-                            <div class="form-check form-switch ms-3">
-                                <input class="form-check-input" type="checkbox" role="switch" id="is_active" name="is_active" {% if group.is_active %}checked{% endif %}>
-                                <label class="form-check-label ms-2" for="is_active" id="is_active_label">{% if group.is_active %}Включено{% else %}Выключено{% endif %}</label>
-                            </div>
+                        </label>
+                        <label class="toggle-switch ms-3">
+                            <input type="checkbox" id="is_active" name="is_active" {% if group.is_active %}checked{% endif %}>
+                            <span class="slider"></span>
                         </label>
                     </div>
                     
@@ -66,26 +121,13 @@
 </div>
 
 <script>
-// AI фильтр переключатель
+// AI фильтр переключатель - показывать/скрывать поле для промпта
 document.getElementById('use_ai_filter').addEventListener('change', function() {
     const aiPromptContainer = document.getElementById('ai_prompt_container');
-    const label = document.getElementById('ai_filter_label');
     if (this.checked) {
         aiPromptContainer.style.display = 'block';
-        label.textContent = 'Включено';
     } else {
         aiPromptContainer.style.display = 'none';
-        label.textContent = 'Выключено';
-    }
-});
-
-// Статус переключатель
-document.getElementById('is_active').addEventListener('change', function() {
-    const label = document.getElementById('is_active_label');
-    if (this.checked) {
-        label.textContent = 'Включено';
-    } else {
-        label.textContent = 'Выключено';
     }
 });
 </script>
