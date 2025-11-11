@@ -400,17 +400,22 @@ def processed_messages(request):
             month_ago = timezone.now() - timedelta(days=30)
             messages_qs = messages_qs.filter(processed_at__gte=month_ago)
     
-    # Сортируем по дате
-    messages_qs = messages_qs.order_by('-processed_at')
+    # Сортируем по дате и используем select_related для оптимизации запросов
+    messages_qs = messages_qs.select_related('keyword_group', 'global_chat').order_by('-processed_at')
     
-    # Подсчитываем количество
+    # Подсчитываем количество (только для отображения, не для всех записей)
     total_count = messages_qs.count()
     approved_count = ProcessedMessage.objects.filter(user=user, ai_approved=True).count()
     rejected_count = ProcessedMessage.objects.filter(user=user, ai_approved=False).count()
     
-    # Преобразуем в список словарей для единообразия с шаблоном
+    # Пагинация ПЕРЕД преобразованием - берем только нужную страницу
+    paginator = Paginator(messages_qs, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Преобразуем в список словарей только для текущей страницы (20 записей вместо 600+)
     all_messages = []
-    for msg in messages_qs:
+    for msg in page_obj:
         all_messages.append({
             'type': 'processed',
             'id': msg.id,
@@ -436,8 +441,9 @@ def processed_messages(request):
             'original_object': msg,
         })
     
-    # Пагинация
-    paginator = Paginator(all_messages, 20)
+    # Создаем новый page_obj с преобразованными данными
+    from django.core.paginator import Page
+    page_obj = Page(all_messages, page_obj.number, paginator)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
