@@ -172,8 +172,8 @@
                             </a>
                             {% endif %}
                             
-                            <!-- Кнопка отправки сообщения (только для одобренных ИИ) -->
-                            {% if message.ai_approved and user.has_sender_account and message.sender_id %}
+                            <!-- Кнопка отправки сообщения -->
+                            {% if user.has_sender_account and message.sender_id %}
                             <button type="button" 
                                     class="btn btn-sm {% if message.message_sent %}btn-success{% else %}btn-outline-info{% endif %} w-100"
                                     onclick="openSendMessageModal({{ message.id }}, '{{ message.sender_name|escapejs }}', {{ message.message_sent|yesno:'true,false' }})">
