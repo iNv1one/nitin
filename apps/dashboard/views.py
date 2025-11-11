@@ -540,34 +540,6 @@ def settings(request):
     """
     user = request.user
     
-    if request.method == 'POST':
-        # Обновляем настройки бота
-        bot_token = request.POST.get('bot_token', '').strip()
-        notification_chat_id = request.POST.get('notification_chat_id', '').strip()
-        
-        # Валидация токена бота (простая проверка)
-        if bot_token and not bot_token.count(':') == 1:
-            messages.error(request, 'Неверный формат токена Telegram бота.')
-            return render(request, 'dashboard/settings.html', {'user': user})
-        
-        # Сохраняем токен (или пустую строку если удалили)
-        user.telegram_bot_token = bot_token if bot_token else ''
-        
-        # Сохраняем chat_id (или None если удалили)
-        if notification_chat_id:
-            try:
-                user.notification_chat_id = int(notification_chat_id)
-            except (ValueError, TypeError):
-                messages.error(request, 'Chat ID должен быть числом.')
-                return render(request, 'dashboard/settings.html', {'user': user})
-        else:
-            user.notification_chat_id = None
-        
-        user.save()
-        messages.success(request, 'Настройки успешно сохранены.')
-        
-        return redirect('dashboard:settings')
-    
     context = {
         'user': user,
     }
