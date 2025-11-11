@@ -131,14 +131,13 @@
                             {% endif %}
                             
                             <small class="text-muted">
-                                {{ message.keyword_group.name }} | 
-                                <i class="fas fa-clock"></i> {{ message.processed_at|date:"d.m.Y H:i" }}
+                                {{ message.processed_at|date:"d.m.Y H:i" }}
                                 {% if message.global_chat %}
                     | 
                                     {% if message.global_chat.invite_link %}
-                                        <i class="fas fa-comments"></i> <a href="{{ message.global_chat.invite_link }}" target="_blank" class="text-decoration-none">{{ message.global_chat.name }}</a>
+                                        <a href="{{ message.global_chat.invite_link }}" target="_blank" class="text-decoration-none">{{ message.global_chat.name }}</a>
                                     {% else %}
-                                        <i class="fas fa-comments"></i> {{ message.global_chat.name }}
+                                        {{ message.global_chat.name }}
                                     {% endif %}
                                 {% endif %}
                             </small>
