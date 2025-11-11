@@ -100,7 +100,11 @@
                     <tbody>
                         {% for group in page_obj %}
                         <tr>
-                            <td><strong>{{ group.name }}</strong></td>
+                            <td>
+                                <a href="{% url 'dashboard:edit_keyword_group' group.id %}" 
+                                   class="text-decoration-none text-dark" 
+                                   style="cursor: pointer;">{{ group.name }}</a>
+                            </td>
                             <td>
                                 <span class="badge bg-secondary">{{ group.keywords_count }} слов</span>
                                 <br>
