@@ -110,22 +110,14 @@
                                 {% endif %}
                             </div>
                             
-                            <!-- Результат ИИ -->
-                            {% if message.ai_approved %}
-                                {% if message.ai_result %}
+                            <!-- Результат ИИ (только для одобренных) -->
+                            {% if message.ai_approved and message.ai_result %}
                                 <div class="alert alert-success alert-sm mb-2">
                                     <strong><i class="fas fa-robot"></i> ИИ:</strong> {{ message.ai_result|truncatewords:30 }}
                                     {% if message.ai_score %}
                                     <span class="badge bg-success ms-2">Оценка: {{ message.ai_score|floatformat:2 }}</span>
                                     {% endif %}
                                 </div>
-                                {% endif %}
-                            {% else %}
-                                {% if message.ai_rejection_reason %}
-                                <div class="alert alert-danger alert-sm mb-2">
-                                    <strong><i class="fas fa-robot"></i> Причина отклонения ИИ:</strong> {{ message.ai_rejection_reason|truncatewords:30 }}
-                                </div>
-                                {% endif %}
                             {% endif %}
                             
                             <small class="text-muted">
@@ -142,7 +134,6 @@
                             </small>
                         </div>
                         <div class="col-md-5">
-                            {% if message.ai_approved %}
                             <div class="mb-2">
                                 <div class="btn-group w-100 mb-2" role="group" aria-label="Quality status">
                                     <button type="button" 
@@ -174,11 +165,6 @@
                                     </button>
                                 </div>
                             </div>
-                            {% else %}
-                            <div class="alert alert-warning mb-2">
-                                <i class="fas fa-info-circle"></i> Сообщение отклонено ИИ - управление недоступно
-                            </div>
-                            {% endif %}
                             
                             {% if message.original_object.message_link %}
                             <a href="{{ message.original_object.message_link }}" target="_blank" class="btn btn-sm btn-outline-primary w-100 mb-2">
@@ -186,7 +172,7 @@
                             </a>
                             {% endif %}
                             
-                            <!-- Кнопка отправки сообщения (только для одобренных) -->
+                            <!-- Кнопка отправки сообщения (только для одобренных ИИ) -->
                             {% if message.ai_approved and user.has_sender_account and message.sender_id %}
                             <button type="button" 
                                     class="btn btn-sm {% if message.message_sent %}btn-success{% else %}btn-outline-info{% endif %} w-100"

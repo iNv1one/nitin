@@ -508,8 +508,35 @@ def processed_messages(request):
 def update_message_status(request, message_id):
     """
     Обновление статуса сообщения
+    Может работать как с ProcessedMessage, так и конвертировать RejectedMessage в ProcessedMessage
     """
-    message = get_object_or_404(ProcessedMessage, id=message_id, user=request.user)
+    # Сначала пытаемся найти ProcessedMessage
+    try:
+        message = ProcessedMessage.objects.get(id=message_id, user=request.user)
+    except ProcessedMessage.DoesNotExist:
+        # Если не нашли, может это RejectedMessage нужно конвертировать
+        try:
+            rejected = RejectedMessage.objects.get(id=message_id, user=request.user)
+            # Конвертируем RejectedMessage в ProcessedMessage
+            message = ProcessedMessage.objects.create(
+                user=rejected.user,
+                keyword_group=rejected.keyword_group,
+                global_chat=rejected.global_chat,
+                message_id=rejected.message_id,
+                chat_id=rejected.chat_id,
+                sender_id=rejected.sender_id,
+                sender_name=rejected.sender_name,
+                sender_username=rejected.sender_username,
+                message_text=rejected.message_text,
+                matched_keywords=rejected.matched_keywords,
+                ai_result=f"Конвертировано из отклоненного. Причина отклонения: {rejected.ai_rejection_reason}",
+                quality_status='none',
+                processed_at=timezone.now(),
+            )
+            # Удаляем rejected сообщение
+            rejected.delete()
+        except RejectedMessage.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Сообщение не найдено'}, status=404)
     
     # Обновление quality_status
     quality_status = request.POST.get('quality_status')
@@ -531,9 +558,8 @@ def update_message_status(request, message_id):
         message.notes = notes
     
     message.save()
-    messages.success(request, 'Статус сообщения обновлен.')
     
-    return redirect('dashboard:processed_messages')
+    return JsonResponse({'success': True})
 
 
 @login_required
