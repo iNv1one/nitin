@@ -209,6 +209,10 @@ def edit_keyword_group(request, group_id):
         
         group.save()
         
+        # Проверяем, является ли это AJAX запросом
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': f'Группа "{group.name}" успешно обновлена.'})
+        
         messages.success(request, f'Группа "{group.name}" успешно обновлена.')
         return redirect('dashboard:keyword_groups')
     

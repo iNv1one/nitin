@@ -108,7 +108,7 @@
                     </thead>
                     <tbody>
                         {% for group in page_obj %}
-                        <tr class="clickable-row" onclick="window.location='{% url 'dashboard:edit_keyword_group' group.id %}';">
+                        <tr class="clickable-row" onclick="openEditPanel({{ group.id }})">
                             <td>{{ group.name }}</td>
                             <td>
                                 <span class="badge bg-secondary">{{ group.keywords_count }} слов</span>
@@ -185,4 +185,99 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Offcanvas для редактирования группы -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="editGroupOffcanvas" style="width: 600px;">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="editGroupOffcanvasLabel">Редактировать группу</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="editGroupContent">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openEditPanel(groupId) {
+    // Открываем offcanvas
+    const offcanvasEl = document.getElementById('editGroupOffcanvas');
+    const offcanvas = new bootstrap.Offcanvas(offcanvasEl);
+    offcanvas.show();
+    
+    // Загружаем содержимое через AJAX
+    const url = `/dashboard/keyword-groups/${groupId}/edit/`;
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            // Создаем временный div для парсинга HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Извлекаем содержимое формы
+            const content = doc.querySelector('.card-body') || doc.querySelector('form');
+            
+            if (content) {
+                document.getElementById('editGroupContent').innerHTML = content.outerHTML;
+                
+                // Переопределяем submit формы для AJAX
+                const form = document.querySelector('#editGroupContent form');
+                if (form) {
+                    form.onsubmit = function(e) {
+                        e.preventDefault();
+                        submitEditForm(form, groupId);
+                    };
+                }
+            } else {
+                document.getElementById('editGroupContent').innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading form:', error);
+            document.getElementById('editGroupContent').innerHTML = 
+                '<div class="alert alert-danger">Ошибка загрузки формы</div>';
+        });
+}
+
+function submitEditForm(form, groupId) {
+    const formData = new FormData(form);
+    const url = form.action || `/dashboard/keyword-groups/${groupId}/edit/`;
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем offcanvas
+            const offcanvasEl = document.getElementById('editGroupOffcanvas');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            offcanvas.hide();
+            
+            // Перезагружаем страницу для отображения изменений
+            location.reload();
+        } else {
+            // Показываем ошибки в форме
+            if (data.errors) {
+                // Здесь можно добавить отображение ошибок
+                alert('Ошибка: ' + JSON.stringify(data.errors));
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting form:', error);
+        alert('Ошибка при сохранении');
+    });
+}
+</script>
 {% endblock %}
