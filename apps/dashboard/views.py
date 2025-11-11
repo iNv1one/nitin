@@ -422,6 +422,12 @@ def processed_messages(request):
     # Добавляем обработанные сообщения
     if ai_status_filter != 'rejected':
         for msg in processed_qs:
+            # Формируем ссылку на сообщение, если её нет
+            message_link = msg.message_link
+            if not message_link and str(msg.chat_id).startswith('-100'):
+                chat_id_clean = str(msg.chat_id)[4:]
+                message_link = f"https://t.me/c/{chat_id_clean}/{msg.message_id}"
+            
             all_messages.append({
                 'type': 'processed',
                 'id': msg.id,
@@ -431,7 +437,7 @@ def processed_messages(request):
                 'sender_name': msg.sender_name,
                 'sender_username': msg.sender_username,
                 'message_text': msg.message_text,
-                'message_link': msg.message_link,
+                'message_link': message_link,
                 'matched_keywords': msg.matched_keywords,
                 'ai_approved': True,
                 'ai_result': msg.ai_result,
@@ -450,6 +456,12 @@ def processed_messages(request):
     # Добавляем отклоненные сообщения
     if ai_status_filter != 'approved':
         for msg in rejected_qs:
+            # Формируем ссылку на сообщение для rejected
+            message_link = ''
+            if str(msg.chat_id).startswith('-100'):
+                chat_id_clean = str(msg.chat_id)[4:]
+                message_link = f"https://t.me/c/{chat_id_clean}/{msg.message_id}"
+            
             all_messages.append({
                 'type': 'rejected',
                 'id': msg.id,
@@ -459,7 +471,7 @@ def processed_messages(request):
                 'sender_name': msg.sender_name,
                 'sender_username': msg.sender_username,
                 'message_text': msg.message_text,
-                'message_link': '',  # У rejected нет message_link, но можно сгенерировать
+                'message_link': message_link,
                 'matched_keywords': msg.matched_keywords,
                 'ai_approved': False,
                 'ai_rejection_reason': msg.ai_rejection_reason,
