@@ -224,25 +224,40 @@ class MessageProcessor:
                     chat_id_clean = str(chat_id)[4:]  # Убираем -100
                     message_link = f"https://t.me/c/{chat_id_clean}/{message_id}"
                 
-                # Создаем запись с global_chat
-                processed_msg = ProcessedMessage.objects.create(
+                # Используем get_or_create чтобы избежать дубликатов
+                # unique_together = ['user', 'message_id', 'chat_id']
+                processed_msg, created = ProcessedMessage.objects.get_or_create(
                     user_id=user_data['user__id'],
-                    keyword_group=keyword_group,
-                    global_chat=global_chat,
-                    monitored_chat_id=None,  # Устаревшее поле, оставляем None
                     message_id=message_id,
                     chat_id=chat_id,
-                    sender_id=message_data.get('sender_id'),
-                    sender_name=self._format_sender_name(message_data),
-                    sender_username=message_data.get('sender_username', ''),
-                    message_text=message_data.get('text', ''),
-                    message_link=message_link,
-                    matched_keywords=matched_keywords,
-                    ai_result=ai_result,
-                    notification_sent=False
+                    defaults={
+                        'keyword_group': keyword_group,
+                        'global_chat': global_chat,
+                        'monitored_chat_id': None,  # Устаревшее поле, оставляем None
+                        'sender_id': message_data.get('sender_id'),
+                        'sender_name': self._format_sender_name(message_data),
+                        'sender_username': message_data.get('sender_username', ''),
+                        'message_text': message_data.get('text', ''),
+                        'message_link': message_link,
+                        'matched_keywords': matched_keywords,
+                        'ai_result': ai_result,
+                        'notification_sent': False
+                    }
                 )
                 
-                logger.info(f"Saved processed message {message_id} for user {user_data['user__id']}")
+                # Если запись уже существовала, обновляем matched_keywords
+                if not created:
+                    # Добавляем новые ключевые слова к существующим
+                    existing_keywords = set(processed_msg.matched_keywords or [])
+                    new_keywords = set(matched_keywords)
+                    all_keywords = list(existing_keywords | new_keywords)
+                    
+                    if all_keywords != processed_msg.matched_keywords:
+                        processed_msg.matched_keywords = all_keywords
+                        processed_msg.save(update_fields=['matched_keywords'])
+                        logger.info(f"Updated keywords for existing message {message_id}")
+                
+                logger.info(f"{'Created' if created else 'Found existing'} processed message {message_id} for user {user_data['user__id']}")
                 return processed_msg
                 
         except Exception as e:
