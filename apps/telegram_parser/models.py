@@ -529,8 +529,8 @@ class RawMessage(models.Model):
     
     # Sender info
     sender_id = models.BigIntegerField(null=True, blank=True, verbose_name="ID отправителя")
-    sender_name = models.CharField(max_length=255, blank=True, verbose_name="Имя отправителя")
-    sender_username = models.CharField(max_length=255, null=True, blank=True, verbose_name="Username отправителя")
+    sender_name = models.CharField(max_length=255, blank=True, default='', verbose_name="Имя отправителя")
+    sender_username = models.CharField(max_length=255, blank=True, default='', verbose_name="Username отправителя")
     
     # Message content
     message_text = models.TextField(verbose_name="Текст сообщения")
