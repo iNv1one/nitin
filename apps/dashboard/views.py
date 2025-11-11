@@ -364,44 +364,120 @@ def delete_monitored_chat(request, chat_id):
 @login_required
 def processed_messages(request):
     """
-    Просмотр обработанных сообщений (CRM)
+    Просмотр всех сообщений - обработанных и отклоненных (CRM)
     """
     user = request.user
-    messages_qs = ProcessedMessage.objects.filter(user=user).order_by('-processed_at')
     
-    # Фильтрация
+    # Фильтры
+    ai_status_filter = request.GET.get('ai_status')  # all, approved, rejected
     status_filter = request.GET.get('status')
     keyword_filter = request.GET.get('keyword')
     date_filter = request.GET.get('date')
     progress_filter = request.GET.get('progress')
     
+    # Получаем обработанные сообщения (одобренные ИИ)
+    processed_qs = ProcessedMessage.objects.filter(user=user)
+    
     if status_filter:
-        messages_qs = messages_qs.filter(quality_status=status_filter)
+        processed_qs = processed_qs.filter(quality_status=status_filter)
     
     if progress_filter:
         if progress_filter == 'dialog':
-            messages_qs = messages_qs.filter(dialog_started=True)
+            processed_qs = processed_qs.filter(dialog_started=True)
         elif progress_filter == 'sale':
-            messages_qs = messages_qs.filter(sale_made=True)
+            processed_qs = processed_qs.filter(sale_made=True)
     
     if keyword_filter:
-        messages_qs = messages_qs.filter(keyword_group__name__icontains=keyword_filter)
+        processed_qs = processed_qs.filter(keyword_group__name__icontains=keyword_filter)
     
     if date_filter:
         if date_filter == 'today':
-            messages_qs = messages_qs.filter(processed_at__date=timezone.now().date())
+            processed_qs = processed_qs.filter(processed_at__date=timezone.now().date())
         elif date_filter == 'week':
             week_ago = timezone.now() - timedelta(days=7)
-            messages_qs = messages_qs.filter(processed_at__gte=week_ago)
+            processed_qs = processed_qs.filter(processed_at__gte=week_ago)
         elif date_filter == 'month':
             month_ago = timezone.now() - timedelta(days=30)
-            messages_qs = messages_qs.filter(processed_at__gte=month_ago)
+            processed_qs = processed_qs.filter(processed_at__gte=month_ago)
     
-    # Подсчитываем общее количество сообщений (с учетом фильтров)
-    total_count = messages_qs.count()
+    # Получаем отклоненные сообщения
+    rejected_qs = RejectedMessage.objects.filter(user=user)
+    
+    if keyword_filter:
+        rejected_qs = rejected_qs.filter(keyword_group__name__icontains=keyword_filter)
+    
+    if date_filter:
+        if date_filter == 'today':
+            rejected_qs = rejected_qs.filter(rejected_at__date=timezone.now().date())
+        elif date_filter == 'week':
+            week_ago = timezone.now() - timedelta(days=7)
+            rejected_qs = rejected_qs.filter(rejected_at__gte=week_ago)
+        elif date_filter == 'month':
+            month_ago = timezone.now() - timedelta(days=30)
+            rejected_qs = rejected_qs.filter(rejected_at__gte=month_ago)
+    
+    # Объединяем в один список с флагом типа
+    all_messages = []
+    
+    # Добавляем обработанные сообщения
+    if ai_status_filter != 'rejected':
+        for msg in processed_qs:
+            all_messages.append({
+                'type': 'processed',
+                'id': msg.id,
+                'message_id': msg.message_id,
+                'chat_id': msg.chat_id,
+                'sender_name': msg.sender_name,
+                'sender_username': msg.sender_username,
+                'message_text': msg.message_text,
+                'matched_keywords': msg.matched_keywords,
+                'ai_approved': True,
+                'ai_result': msg.ai_result,
+                'ai_score': msg.ai_score,
+                'quality_status': msg.quality_status,
+                'dialog_started': msg.dialog_started,
+                'sale_made': msg.sale_made,
+                'notes': msg.notes,
+                'global_chat': msg.global_chat,
+                'keyword_group': msg.keyword_group,
+                'date': msg.processed_at,
+                'original_object': msg,
+            })
+    
+    # Добавляем отклоненные сообщения
+    if ai_status_filter != 'approved':
+        for msg in rejected_qs:
+            all_messages.append({
+                'type': 'rejected',
+                'id': msg.id,
+                'message_id': msg.message_id,
+                'chat_id': msg.chat_id,
+                'sender_name': msg.sender_name,
+                'sender_username': msg.sender_username,
+                'message_text': msg.message_text,
+                'matched_keywords': msg.matched_keywords,
+                'ai_approved': False,
+                'ai_rejection_reason': msg.ai_rejection_reason,
+                'quality_status': 'none',  # для отклоненных всегда none
+                'dialog_started': False,
+                'sale_made': False,
+                'notes': '',
+                'global_chat': msg.global_chat,
+                'keyword_group': msg.keyword_group,
+                'date': msg.rejected_at,
+                'original_object': msg,
+            })
+    
+    # Сортируем по дате (новые первыми)
+    all_messages.sort(key=lambda x: x['date'], reverse=True)
+    
+    # Подсчитываем общее количество
+    total_count = len(all_messages)
+    approved_count = sum(1 for m in all_messages if m['ai_approved'])
+    rejected_count = sum(1 for m in all_messages if not m['ai_approved'])
     
     # Пагинация
-    paginator = Paginator(messages_qs, 20)
+    paginator = Paginator(all_messages, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -413,6 +489,9 @@ def processed_messages(request):
         'page_obj': page_obj,
         'user': user,
         'total_count': total_count,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+        'ai_status_filter': ai_status_filter,
         'status_filter': status_filter,
         'keyword_filter': keyword_filter,
         'date_filter': date_filter,
