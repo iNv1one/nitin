@@ -211,7 +211,7 @@ function openEditPanel(groupId) {
     offcanvas.show();
     
     // Загружаем содержимое через AJAX
-    const url = `/dashboard/keywords/${groupId}/edit/`;
+    const url = `/keywords/${groupId}/edit/`;
     
     fetch(url)
         .then(response => response.text())
@@ -247,7 +247,7 @@ function openEditPanel(groupId) {
 
 function submitEditForm(form, groupId) {
     const formData = new FormData(form);
-    const url = form.action || `/dashboard/keywords/${groupId}/edit/`;
+    const url = form.action || `/keywords/${groupId}/edit/`;
     
     fetch(url, {
         method: 'POST',
