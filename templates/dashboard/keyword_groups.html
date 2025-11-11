@@ -65,6 +65,15 @@
         opacity: 0.5;
         cursor: not-allowed;
     }
+    
+    /* Кликабельные строки таблицы */
+    .clickable-row {
+        cursor: pointer;
+    }
+    
+    .clickable-row:hover {
+        background-color: #e3e8ed !important;
+    }
 </style>
 {% endblock %}
 
@@ -99,12 +108,8 @@
                     </thead>
                     <tbody>
                         {% for group in page_obj %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'dashboard:edit_keyword_group' group.id %}" 
-                                   class="text-decoration-none text-dark" 
-                                   style="cursor: pointer;">{{ group.name }}</a>
-                            </td>
+                        <tr class="clickable-row" onclick="window.location='{% url 'dashboard:edit_keyword_group' group.id %}';">
+                            <td>{{ group.name }}</td>
                             <td>
                                 <span class="badge bg-secondary">{{ group.keywords_count }} слов</span>
                                 <br>
@@ -128,12 +133,13 @@
                             </td>
                             <td>{{ group.created_at|date:"d.m.Y H:i" }}</td>
                             <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{% url 'dashboard:edit_keyword_group' group.id %}" class="btn btn-sm btn-outline-primary">
+                <div class="btn-group" role="group">
+                                    <a href="{% url 'dashboard:edit_keyword_group' group.id %}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <form method="post" action="{% url 'dashboard:delete_keyword_group' group.id %}" class="d-inline"
-                                          onsubmit="return confirm('Вы уверены, что хотите удалить группу {{ group.name }}?');">
+                                          onsubmit="event.stopPropagation(); return confirm('Вы уверены, что хотите удалить группу {{ group.name }}?');"
+                                          onclick="event.stopPropagation();">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                             <i class="fas fa-trash"></i>
