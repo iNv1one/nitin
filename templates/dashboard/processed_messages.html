@@ -132,7 +132,7 @@
                             
                             <small class="text-muted">
                                 {{ message.keyword_group.name }} | 
-                                <i class="fas fa-clock"></i> {{ message.date|date:"d.m.Y H:i" }}
+                                <i class="fas fa-clock"></i> {{ message.processed_at|date:"d.m.Y H:i" }}
                                 {% if message.global_chat %}
                     | 
                                     {% if message.global_chat.invite_link %}
