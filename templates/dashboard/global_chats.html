@@ -93,7 +93,7 @@
         }
     </style>
 
-    <!-- Поиск -->
+    <!-- Поиск и статистика -->
     <div class="row mb-3">
         <div class="col-md-6">
             <form method="get" class="input-group">
@@ -112,12 +112,26 @@
                 {% endif %}
             </form>
         </div>
+        <div class="col-md-6 d-flex align-items-center justify-content-end">
+            <div class="me-4">
+                <i class="fas fa-list text-secondary"></i>
+                <strong>Всего:</strong> <span class="badge bg-secondary">{{ total_chats }}</span>
+            </div>
+            <div class="me-4">
+                <i class="fas fa-check-circle text-success"></i>
+                <strong>Включено:</strong> <span class="badge bg-success">{{ enabled_count }}</span>
+            </div>
+            <div>
+                <i class="fas fa-times-circle text-danger"></i>
+                <strong>Выключено:</strong> <span class="badge bg-danger">{{ disabled_count }}</span>
+            </div>
+        </div>
     </div>
 
     <!-- Список чатов -->
     <div class="card">
         <div class="card-header">
-            <i class="fas fa-list"></i> Список глобальных чатов
+            <i class="fas fa-list"></i> Список чатов
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
