@@ -287,17 +287,32 @@ class BotStatusAdmin(admin.ModelAdmin):
             )
             
             if result.returncode == 0:
+                # Считаем активные чаты
+                active_chats = GlobalChat.objects.filter(is_active=True).count()
                 self.message_user(
                     request,
-                    "✅ Парсер успешно перезапущен. Новые чаты будут загружены автоматически.",
+                    f"✅ Парсер успешно перезапущен. {active_chats} активных чатов будут загружены автоматически.",
                     level='SUCCESS'
                 )
             else:
+                error_msg = result.stderr.strip() if result.stderr else 'Неизвестная ошибка'
                 self.message_user(
                     request,
-                    f"❌ Ошибка перезапуска: {result.stderr}",
+                    f"❌ Ошибка перезапуска (код {result.returncode}): {error_msg}",
                     level='ERROR'
                 )
+        except subprocess.TimeoutExpired:
+            self.message_user(
+                request,
+                "⚠️ Превышено время ожидания. Перезапуск может выполняться в фоне.",
+                level='WARNING'
+            )
+        except Exception as e:
+            self.message_user(
+                request,
+                f"❌ Ошибка: {str(e)}. Проверьте настройки sudo для пользователя веб-сервера.",
+                level='ERROR'
+            )
         except subprocess.TimeoutExpired:
             self.message_user(
                 request,
@@ -332,7 +347,7 @@ class GlobalChatAdmin(admin.ModelAdmin):
     search_fields = ['name', 'chat_id']
     readonly_fields = ['created_at', 'updated_at']
     
-    actions = ['restart_parser_after_changes']
+    actions = ['restart_parser_after_changes', 'enable_for_all_users']
     
     fieldsets = (
         ('Информация о чате', {
@@ -343,6 +358,35 @@ class GlobalChatAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    @admin.action(description='👥 Включить чат для всех пользователей')
+    def enable_for_all_users(self, request, queryset):
+        """Включить выбранные чаты для всех пользователей"""
+        from apps.users.models import User
+        
+        total_enabled = 0
+        for chat in queryset:
+            users = User.objects.filter(is_active=True)
+            enabled_count = 0
+            
+            for user in users:
+                setting, created = UserChatSettings.objects.get_or_create(
+                    user=user,
+                    global_chat=chat,
+                    defaults={'is_enabled': True}
+                )
+                if created or not setting.is_enabled:
+                    setting.is_enabled = True
+                    setting.save()
+                    enabled_count += 1
+            
+            total_enabled += enabled_count
+            
+        self.message_user(
+            request,
+            f"✅ Включено {queryset.count()} чатов для пользователей. Всего создано/обновлено {total_enabled} настроек.",
+            level='SUCCESS'
+        )
     
     @admin.action(description='🔄 Перезапустить парсер (загрузить новые чаты)')
     def restart_parser_after_changes(self, request, queryset):
@@ -369,20 +413,31 @@ class GlobalChatAdmin(admin.ModelAdmin):
             
             if result.returncode == 0:
                 active_chats = queryset.filter(is_active=True).count()
+                total_active = GlobalChat.objects.filter(is_active=True).count()
                 self.message_user(
                     request,
-                    f"✅ Парсер перезапущен! {active_chats} активных чатов будут загружены.",
+                    f"✅ Парсер перезапущен! Всего {total_active} активных чатов будут загружены.",
                     level='SUCCESS'
                 )
             else:
+                error_msg = result.stderr.strip() if result.stderr else 'Неизвестная ошибка'
                 self.message_user(
                     request,
-                    f"❌ Ошибка перезапуска: {result.stderr}",
+                    f"❌ Ошибка перезапуска (код {result.returncode}): {error_msg}",
                     level='ERROR'
                 )
+        except subprocess.TimeoutExpired:
+            self.message_user(
+                request,
+                "⚠️ Превышено время ожидания. Перезапуск может выполняться в фоне.",
+                level='WARNING'
+            )
         except Exception as e:
             self.message_user(
                 request,
+                f"❌ Ошибка: {str(e)}. Проверьте настройки sudo для пользователя веб-сервера.",
+                level='ERROR'
+            )
                 f"❌ Ошибка: {str(e)}",
                 level='ERROR'
             )
