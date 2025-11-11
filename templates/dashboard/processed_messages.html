@@ -166,11 +166,9 @@
                                 </div>
                             </div>
                             
-                            {% if message.message_link %}
-                            <a href="{{ message.message_link }}" target="_blank" class="btn btn-sm btn-outline-primary w-100 mb-2">
+                            <a href="{{ message.message_link|default:'#' }}" target="_blank" class="btn btn-sm btn-outline-primary w-100 mb-2" {% if not message.message_link %}disabled{% endif %}>
                                 <i class="fas fa-external-link-alt"></i> Открыть в Telegram
                             </a>
-                            {% endif %}
                             
                             <!-- Кнопка отправки сообщения -->
                             {% if user.has_sender_account and message.sender_id %}
