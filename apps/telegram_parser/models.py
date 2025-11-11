@@ -144,6 +144,14 @@ class KeywordGroup(models.Model):
         help_text="Список ключевых слов для поиска"
     )
     
+    # Notification settings
+    notification_chat_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Chat ID для уведомлений",
+        help_text="ID чата Telegram, куда отправлять уведомления по этой группе ключевых слов"
+    )
+    
     # AI settings
     use_ai_filter = models.BooleanField(
         default=False,

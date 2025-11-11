@@ -301,7 +301,7 @@ def add_monitored_chat(request):
         
         # Отправляем уведомление администратору
         try:
-            bot = telebot.TeleBot('7193620780:AAEM_QlyHeGMFbppRp2Uw7ObBrL73lEjkL0')
+            bot = telebot.TeleBot(settings.TELEGRAM_NOTIFICATION_BOT_TOKEN)
             admin_message = f"""
 🆕 <b>Новая заявка на добавление чата</b>
 
@@ -477,12 +477,12 @@ def ajax_update_message_status(request, message_id):
         message.save()
         
         # Обновляем сообщение в Telegram, если есть telegram_message_id
-        if message.telegram_message_id and request.user.telegram_bot_token:
+        if message.telegram_message_id:
             try:
                 import telebot
                 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
                 
-                bot = telebot.TeleBot(request.user.telegram_bot_token)
+                bot = telebot.TeleBot(settings.TELEGRAM_NOTIFICATION_BOT_TOKEN)
                 
                 # Формируем клавиатуру с обновленными статусами
                 keyboard = InlineKeyboardMarkup(row_width=3)

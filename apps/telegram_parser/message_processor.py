@@ -63,8 +63,7 @@ class MessageProcessor:
             ).select_related('user', 'global_chat').values(
                 'user__id',
                 'user__username',
-                'user__telegram_bot_token',
-                'user__notification_chat_id',
+                'user__notification_chat_id',  # Fallback для групп без своего chat_id
                 'global_chat__id',
                 'global_chat__name'
             )
@@ -119,7 +118,7 @@ class MessageProcessor:
                         # Отправляем уведомление
                         if processed_msg:
                             logger.info(f"📨 Отправка уведомления в Telegram для user {user_id}")
-                            self._send_notification(user_data, processed_msg)
+                            self._send_notification(user_data, processed_msg, group)
                             logger.info(f"✅ Уведомление отправлено для сообщения {processed_msg.id}")
                 
         except Exception as e:
@@ -321,14 +320,21 @@ class MessageProcessor:
         else:
             return f"User {message_data.get('sender_id', 'Unknown')}"
     
-    def _send_notification(self, user_data: Dict, processed_msg: ProcessedMessage):
+    def _send_notification(self, user_data: Dict, processed_msg: ProcessedMessage, keyword_group: KeywordGroup):
         """Отправляем уведомление пользователю"""
         try:
-            bot_token = user_data.get('user__telegram_bot_token')
-            chat_id = user_data.get('user__notification_chat_id')
+            # Используем централизованный токен бота
+            bot_token = settings.TELEGRAM_NOTIFICATION_BOT_TOKEN
             
-            if not bot_token or not chat_id:
-                logger.warning(f"No bot token or chat ID for user {user_data['user__id']}")
+            # Используем chat_id из группы, если есть, иначе из пользователя
+            chat_id = keyword_group.notification_chat_id or user_data.get('user__notification_chat_id')
+            
+            if not bot_token:
+                logger.error(f"TELEGRAM_NOTIFICATION_BOT_TOKEN not configured in settings")
+                return False
+            
+            if not chat_id:
+                logger.warning(f"No notification chat ID for user {user_data['user__id']} and group {keyword_group.id}")
                 return False
             
             # Получаем или создаем бот для пользователя

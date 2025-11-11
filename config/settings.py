@@ -122,6 +122,8 @@ LOGOUT_REDIRECT_URL = '/'
 # Telegram settings
 TELEGRAM_API_ID = config('TELEGRAM_API_ID', cast=int)
 TELEGRAM_API_HASH = config('TELEGRAM_API_HASH')
+# Общий бот для уведомлений (используется для всех пользователей)
+TELEGRAM_NOTIFICATION_BOT_TOKEN = '7193620780:AAEM_QlyHeGMFbppRp2Uw7ObBrL73lEjkL0'
 
 # Grok AI settings (использует OpenAI-совместимый API)
 OPENAI_API_KEY = config('OPENAI_API_KEY')
