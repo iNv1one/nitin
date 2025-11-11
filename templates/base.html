@@ -17,6 +17,8 @@
             background-color: #ffffff;
             padding-top: 20px;
             border-right: 1px solid #e1e5e8;
+            display: flex;
+            flex-direction: column;
         }
         
         .sidebar .nav-link {
@@ -87,26 +89,6 @@
             <a class="navbar-brand" href="{% url 'dashboard:dashboard' %}">
                 <i class="fas fa-robot"></i> NITIN
             </a>
-            
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user"></i> {{ user.get_full_name|default:user.username }}
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'profile' %}">
-                            <i class="fas fa-user-cog"></i> Профиль
-                        </a></li>
-                        <li><a class="dropdown-item" href="{% url 'dashboard:settings' %}">
-                            <i class="fas fa-cog"></i> Настройки
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'logout' %}">
-                            <i class="fas fa-sign-out-alt"></i> Выход
-                        </a></li>
-                    </ul>
-                </div>
-            </div>
         </div>
     </nav>
 
@@ -165,6 +147,23 @@
                         <i class="fas fa-cog"></i> Настройки
                     </a>
                 </nav>
+                
+                <!-- User Profile Section -->
+                <div class="mt-auto p-3 border-top">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                            <small class="text-muted">{{ user.email }}</small>
+                        </div>
+                    </div>
+                    <a class="btn btn-sm btn-outline-primary w-100 mb-1" href="{% url 'profile' %}">
+                        <i class="fas fa-user-cog"></i> Профиль
+                    </a>
+                    <a class="btn btn-sm btn-outline-danger w-100" href="{% url 'logout' %}">
+                        <i class="fas fa-sign-out-alt"></i> Выход
+                    </a>
+                </div>
                 
                 <!-- System Status -->
                 <div class="mt-4 p-3 bg-light rounded">
