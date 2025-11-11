@@ -128,10 +128,6 @@
                        href="{% url 'dashboard:processed_messages' %}">
                         <i class="fas fa-envelope"></i> Сообщения
                     </a>
-                    <a class="nav-link {% if 'statistics' in request.resolver_match.url_name %}active{% endif %}" 
-                       href="{% url 'dashboard:statistics' %}">
-                        <i class="fas fa-chart-bar"></i> Статистика
-                    </a>
                     <a class="nav-link {% if 'template' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:message_templates' %}">
                         <i class="fas fa-file-alt"></i> Шаблоны

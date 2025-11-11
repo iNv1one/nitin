@@ -41,8 +41,7 @@ urlpatterns = [
     # Сырые сообщения (отладка)
     path('raw-messages/', views.raw_messages, name='raw_messages'),
     
-    # Статистика
-    path('statistics/', views.statistics, name='statistics'),
+    # AJAX для детальной статистики (используется на главной)
     path('statistics/groups/', views.statistics_groups_ajax, name='statistics_groups_ajax'),
     path('statistics/chats/', views.statistics_chats_ajax, name='statistics_chats_ajax'),
     
