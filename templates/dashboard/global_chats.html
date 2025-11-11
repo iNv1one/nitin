@@ -93,40 +93,46 @@
         }
     </style>
 
-    <!-- Поиск и статистика -->
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <form method="get" class="input-group">
-                <input type="text" 
+{% block content %}
+<!-- Заголовок страницы -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-comments"></i> Чаты</h2>
+            <div>
+                <span class="badge bg-secondary">Всего: {{ total_chats }}</span>
+                <span class="badge bg-success">Включено: {{ enabled_count }}</span>
+                <span class="badge bg-danger">Выключено: {{ disabled_count }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Поиск -->
+<div class="row mb-3">
+    <div class="col-12">
+        <form method="get" class="input-group">
+            <input type="text" 
                        class="form-control" 
                        name="search" 
                        placeholder="Поиск по названию чата..." 
                        value="{{ search_query }}">
-                <button class="btn btn-primary" type="submit">
-                    <i class="fas fa-search"></i> Искать
-                </button>
-                {% if search_query %}
-                <a href="{% url 'dashboard:global_chats' %}" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Сбросить
-                </a>
-                {% endif %}
-            </form>
-        </div>
-        <div class="col-md-6 d-flex align-items-center justify-content-end">
-            <div class="me-4">
-                <strong>Всего:</strong> <span class="badge bg-secondary">{{ total_chats }}</span>
-            </div>
-            <div class="me-4">
-                <strong>Включено:</strong> <span class="badge bg-success">{{ enabled_count }}</span>
-            </div>
-            <div>
-                <strong>Выключено:</strong> <span class="badge bg-danger">{{ disabled_count }}</span>
-            </div>
-        </div>
+            <button class="btn btn-primary" type="submit">
+                <i class="fas fa-search"></i> Искать
+            </button>
+            {% if search_query %}
+            <a href="{% url 'dashboard:global_chats' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Сбросить
+            </a>
+            {% endif %}
+        </form>
     </div>
+</div>
 
-    <!-- Список чатов -->
-    <div class="card">
+<!-- Список чатов -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
         <div class="card-header">
             <i class="fas fa-list"></i> Список чатов
         </div>
