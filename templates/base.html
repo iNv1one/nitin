@@ -120,10 +120,6 @@
                        href="{% url 'dashboard:global_chats' %}">
                         <i class="fas fa-globe"></i> Глобальные чаты
                     </a>
-                    <a class="nav-link {% if 'monitored_chat' in request.resolver_match.url_name and 'global' not in request.resolver_match.url_name %}active{% endif %}" 
-                       href="{% url 'dashboard:monitored_chats' %}">
-                        <i class="fas fa-comments"></i> Мои чаты
-                    </a>
                     <a class="nav-link {% if 'message' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:processed_messages' %}">
                         <i class="fas fa-envelope"></i> Сообщения
