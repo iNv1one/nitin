@@ -33,10 +33,13 @@
                         <small class="form-text text-muted">ID чата Telegram, куда отправлять уведомления по этой группе. Если не указан, будет использоваться ID из настроек пользователя.</small>
                     </div>
                     
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="use_ai_filter" name="use_ai_filter">
-                        <label class="form-check-label" for="use_ai_filter">
-                            <i class="fas fa-robot"></i> Использовать AI фильтр
+                    <div class="mb-3">
+                        <label class="form-label d-flex align-items-center">
+                            <i class="fas fa-robot me-2"></i> AI фильтр
+                            <div class="form-check form-switch ms-3">
+                                <input class="form-check-input" type="checkbox" role="switch" id="use_ai_filter" name="use_ai_filter">
+                                <label class="form-check-label ms-2" for="use_ai_filter" id="ai_filter_label">Выключено</label>
+                            </div>
                         </label>
                         <small class="form-text text-muted d-block">
                             Дополнительная проверка сообщений через ИИ для повышения точности
@@ -50,10 +53,13 @@
                         <small class="form-text text-muted">Чем точнее инструкция, тем лучше результат</small>
                     </div>
                     
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
-                        <label class="form-check-label" for="is_active">
-                            Активировать сразу после создания
+                    <div class="mb-3">
+                        <label class="form-label d-flex align-items-center">
+                            Статус группы
+                            <div class="form-check form-switch ms-3">
+                                <input class="form-check-input" type="checkbox" role="switch" id="is_active" name="is_active" checked>
+                                <label class="form-check-label ms-2" for="is_active" id="is_active_label">Включено</label>
+                            </div>
                         </label>
                     </div>
                     
@@ -72,13 +78,27 @@
 </div>
 
 <script>
+// AI фильтр переключатель
 document.getElementById('use_ai_filter').addEventListener('change', function() {
     const aiPromptContainer = document.getElementById('ai_prompt_container');
+    const label = document.getElementById('ai_filter_label');
     if (this.checked) {
         aiPromptContainer.style.display = 'block';
+        label.textContent = 'Включено';
     } else {
         aiPromptContainer.style.display = 'none';
+        label.textContent = 'Выключено';
     }
+});
+
+// Статус переключатель
+document.getElementById('is_active').addEventListener('change', function() {
+    const label = document.getElementById('is_active_label');
+    if (this.checked) {
+        label.textContent = 'Включено';
+    } else {
+        label.textContent = 'Выключено';
+```    }
 });
 </script>
 {% endblock %}
