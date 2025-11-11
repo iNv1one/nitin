@@ -30,6 +30,9 @@ urlpatterns = [
     path('messages/<int:message_id>/status/', views.update_message_status, name='update_message_status'),
     path('message/<int:message_id>/send/', views.send_message_to_lead, name='send_message_to_lead'),
     
+    # Отправленные сообщения
+    path('sent-messages/', views.sent_messages, name='sent_messages'),
+    
     # РќР°СЃС‚СЂРѕР№РєРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     path('settings/', views.settings, name='settings'),
     # Управление парсером

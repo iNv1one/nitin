@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Отправленные сообщения - NITIN{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-paper-plane"></i> Отправленные сообщения</h2>
+            <div>
+                <span class="badge bg-primary">Всего: {{ total_count }}</span>
+                <span class="badge bg-info">Прочитано: {{ read_count }} ({{ read_percentage }}%)</span>
+                <span class="badge bg-success">Ответили: {{ replied_count }} ({{ replied_percentage }}%)</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> Обновить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Статус</label>
+                        <select name="status" class="form-select">
+                            <option value="">Все</option>
+                            <option value="read" {% if status_filter == 'read' %}selected{% endif %}>👁 Прочитано</option>
+                            <option value="unread" {% if status_filter == 'unread' %}selected{% endif %}>⚪ Не прочитано</option>
+                            <option value="replied" {% if status_filter == 'replied' %}selected{% endif %}>💬 Ответил</option>
+                            <option value="not_replied" {% if status_filter == 'not_replied' %}selected{% endif %}>❌ Не ответил</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Sender-аккаунт</label>
+                        <select name="sender_account" class="form-select">
+                            <option value="">Все аккаунты</option>
+                            {% for account in sender_accounts %}
+                            <option value="{{ account }}" {% if sender_account_filter == account %}selected{% endif %}>{{ account }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Период</label>
+                        <select name="date" class="form-select">
+                            <option value="">Все время</option>
+                            <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Сегодня</option>
+                            <option value="week" {% if date_filter == 'week' %}selected{% endif %}>Неделя</option>
+                            <option value="month" {% if date_filter == 'month' %}selected{% endif %}>Месяц</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Получатель</label>
+                        <input type="text" name="recipient" class="form-control" placeholder="Имя или @username" value="{{ recipient_filter }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn d-block w-100" style="background-color: #1a1a24; color: white;">
+                            <i class="fas fa-filter"></i> Фильтровать
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Список отправленных сообщений -->
+<div class="row">
+    <div class="col-12">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 140px;">Дата</th>
+                            <th style="width: 200px;">Получатель</th>
+                            <th>Сообщение</th>
+                            <th style="width: 150px;">Sender-аккаунт</th>
+                            <th style="width: 150px;">Статус</th>
+                            <th style="width: 100px;">Время</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for msg in page_obj %}
+                        <tr>
+                            <td class="text-muted small">
+                                <div>{{ msg.sent_at|date:"d.m.Y" }}</div>
+                                <div><strong>{{ msg.sent_at|date:"H:i" }}</strong></div>
+                            </td>
+                            <td>
+                                <div><strong>{{ msg.recipient_name }}</strong></div>
+                                {% if msg.recipient_username %}
+                                <div class="text-muted small">@{{ msg.recipient_username }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 300px;" title="{{ msg.sent_message_text }}">
+                                    {{ msg.sent_message_text|truncatewords:15 }}
+                                </div>
+                                {% if msg.is_replied and msg.reply_text %}
+                                <div class="mt-2 p-2 bg-light rounded">
+                                    <small class="text-muted">💬 Ответ:</small>
+                                    <div class="text-truncate" title="{{ msg.reply_text }}">
+                                        <small>{{ msg.reply_text|truncatewords:10 }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ msg.sent_from_account }}</span>
+                            </td>
+                            <td>
+                                {% if msg.is_replied %}
+                                    <span class="badge bg-success">💬 Ответил</span>
+                                {% elif msg.is_read %}
+                                    <span class="badge bg-info">👁 Прочитано</span>
+                                {% elif msg.is_delivered %}
+                                    <span class="badge bg-primary">✓ Доставлено</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Отправлено</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">
+                                {% if msg.get_response_time %}
+                                    <span class="badge bg-success">{{ msg.get_response_time }}</span>
+                                {% elif msg.get_read_time %}
+                                    <span class="badge bg-info">{{ msg.get_read_time }}</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Пагинация -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sender_account_filter %}&sender_account={{ sender_account_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if recipient_filter %}&recipient={{ recipient_filter }}{% endif %}">Назад</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sender_account_filter %}&sender_account={{ sender_account_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if recipient_filter %}&recipient={{ recipient_filter }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sender_account_filter %}&sender_account={{ sender_account_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if recipient_filter %}&recipient={{ recipient_filter }}{% endif %}">Вперёд</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Нет отправленных сообщений
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -10,7 +10,7 @@ from datetime import timedelta
 import json
 import logging
 
-from apps.telegram_parser.models import KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus, GlobalChat, UserChatSettings, RawMessage, MessageTemplate, RejectedMessage
+from apps.telegram_parser.models import KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus, GlobalChat, UserChatSettings, RawMessage, MessageTemplate, RejectedMessage, SentMessageHistory
 from apps.users.models import User
 logger = logging.getLogger(__name__)
 
@@ -545,6 +545,83 @@ def settings(request):
     }
     
     return render(request, 'dashboard/settings.html', context)
+
+
+@login_required
+def sent_messages(request):
+    """
+    История отправленных сообщений через sender-аккаунт
+    """
+    user = request.user
+    messages_qs = SentMessageHistory.objects.filter(user=user).order_by('-sent_at')
+    
+    # Фильтрация
+    status_filter = request.GET.get('status')
+    sender_account_filter = request.GET.get('sender_account')
+    recipient_filter = request.GET.get('recipient')
+    date_filter = request.GET.get('date')
+    
+    if status_filter:
+        if status_filter == 'read':
+            messages_qs = messages_qs.filter(is_read=True)
+        elif status_filter == 'unread':
+            messages_qs = messages_qs.filter(is_read=False)
+        elif status_filter == 'replied':
+            messages_qs = messages_qs.filter(is_replied=True)
+        elif status_filter == 'not_replied':
+            messages_qs = messages_qs.filter(is_replied=False)
+    
+    if sender_account_filter:
+        messages_qs = messages_qs.filter(sent_from_account__icontains=sender_account_filter)
+    
+    if recipient_filter:
+        messages_qs = messages_qs.filter(
+            Q(recipient_name__icontains=recipient_filter) |
+            Q(recipient_username__icontains=recipient_filter)
+        )
+    
+    if date_filter:
+        if date_filter == 'today':
+            messages_qs = messages_qs.filter(sent_at__date=timezone.now().date())
+        elif date_filter == 'week':
+            week_ago = timezone.now() - timedelta(days=7)
+            messages_qs = messages_qs.filter(sent_at__gte=week_ago)
+        elif date_filter == 'month':
+            month_ago = timezone.now() - timedelta(days=30)
+            messages_qs = messages_qs.filter(sent_at__gte=month_ago)
+    
+    # Статистика
+    total_count = messages_qs.count()
+    read_count = messages_qs.filter(is_read=True).count()
+    replied_count = messages_qs.filter(is_replied=True).count()
+    
+    read_percentage = (read_count / total_count * 100) if total_count > 0 else 0
+    replied_percentage = (replied_count / total_count * 100) if total_count > 0 else 0
+    
+    # Пагинация
+    paginator = Paginator(messages_qs, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Получаем список sender-аккаунтов для фильтра
+    sender_accounts = SentMessageHistory.objects.filter(user=user).values_list('sent_from_account', flat=True).distinct()
+    
+    context = {
+        'page_obj': page_obj,
+        'user': user,
+        'total_count': total_count,
+        'read_count': read_count,
+        'replied_count': replied_count,
+        'read_percentage': round(read_percentage, 1),
+        'replied_percentage': round(replied_percentage, 1),
+        'status_filter': status_filter,
+        'sender_account_filter': sender_account_filter,
+        'recipient_filter': recipient_filter,
+        'date_filter': date_filter,
+        'sender_accounts': sender_accounts,
+    }
+    
+    return render(request, 'dashboard/sent_messages.html', context)
 
 
 @login_required

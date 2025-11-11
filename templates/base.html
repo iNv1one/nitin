@@ -120,9 +120,13 @@
                        href="{% url 'dashboard:global_chats' %}">
                         <i class="fas fa-comments"></i> Чаты
                     </a>
-                    <a class="nav-link {% if 'message' in request.resolver_match.url_name %}active{% endif %}" 
+                    <a class="nav-link {% if 'message' in request.resolver_match.url_name and 'sent' not in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:processed_messages' %}">
                         <i class="fas fa-envelope"></i> Сообщения
+                    </a>
+                    <a class="nav-link {% if 'sent_messages' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'dashboard:sent_messages' %}">
+                        <i class="fas fa-paper-plane"></i> Исходящие
                     </a>
                     <a class="nav-link {% if 'template' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:message_templates' %}">
