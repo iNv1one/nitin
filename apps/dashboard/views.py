@@ -150,6 +150,7 @@ def create_keyword_group(request):
         ai_prompt = request.POST.get('ai_prompt', '')
         use_ai_filter = request.POST.get('use_ai_filter') == 'on'
         is_active = request.POST.get('is_active') == 'on'
+        notification_chat_id = request.POST.get('notification_chat_id', '').strip()
         
         if not name or not keywords:
             messages.error(request, 'Название и ключевые слова обязательны для заполнения.')
@@ -173,7 +174,8 @@ def create_keyword_group(request):
             keywords=keywords_list,
             ai_prompt=ai_prompt,
             use_ai_filter=use_ai_filter,
-            is_active=is_active
+            is_active=is_active,
+            notification_chat_id=int(notification_chat_id) if notification_chat_id else None
         )
         
         messages.success(request, f'Группа ключевых слов "{name}" успешно создана.')
@@ -196,6 +198,7 @@ def edit_keyword_group(request, group_id):
         ai_prompt = request.POST.get('ai_prompt', group.ai_prompt)
         use_ai_filter = request.POST.get('use_ai_filter') == 'on'
         is_active = request.POST.get('is_active') == 'on'
+        notification_chat_id = request.POST.get('notification_chat_id', '').strip()
         
         # Парсим ключевые слова так же как при создании
         if keywords:
@@ -208,6 +211,7 @@ def edit_keyword_group(request, group_id):
         group.ai_prompt = ai_prompt
         group.use_ai_filter = use_ai_filter
         group.is_active = is_active
+        group.notification_chat_id = int(notification_chat_id) if notification_chat_id else None
         
         group.save()
         

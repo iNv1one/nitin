@@ -26,6 +26,13 @@
                         <small class="form-text text-muted">Разделяйте слова запятыми или переносом строки</small>
                     </div>
                     
+                    <div class="mb-3">
+                        <label for="notification_chat_id" class="form-label">Chat ID для уведомлений</label>
+                        <input type="number" class="form-control" id="notification_chat_id" name="notification_chat_id" 
+                               placeholder="Например: -1001234567890">
+                        <small class="form-text text-muted">ID чата Telegram, куда отправлять уведомления по этой группе. Если не указан, будет использоваться ID из настроек пользователя.</small>
+                    </div>
+                    
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="use_ai_filter" name="use_ai_filter">
                         <label class="form-check-label" for="use_ai_filter">
