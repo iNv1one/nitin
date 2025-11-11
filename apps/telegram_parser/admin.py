@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.db.models import Count, Q
 from .models import (
     KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,
-    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate, RejectedMessage
+    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate, RejectedMessage, SentMessageHistory
 )
 
 
@@ -649,6 +649,56 @@ class RejectedMessageAdmin(admin.ModelAdmin):
         """Краткий текст сообщения"""
         return obj.message_text[:100] + '...' if len(obj.message_text) > 100 else obj.message_text
     short_text.short_description = 'Текст сообщения'
+
+
+@admin.register(SentMessageHistory)
+class SentMessageHistoryAdmin(admin.ModelAdmin):
+    """Админка для истории отправленных сообщений"""
+    
+    list_display = ['id', 'user', 'recipient_display', 'sent_from_account', 'sent_at', 'status_badges', 'response_time_display']
+    list_filter = ['is_delivered', 'is_read', 'is_replied', 'sent_from_account', 'sent_at']
+    search_fields = ['recipient_name', 'recipient_username', 'sent_message_text', 'reply_text', 'sent_from_account']
+    list_select_related = ['user', 'processed_message', 'template_used']
+    date_hierarchy = 'sent_at'
+    
+    fieldsets = (
+        ('Отправитель', {'fields': ('user', 'processed_message', 'template_used')}),
+        ('Получатель', {'fields': ('recipient_name', 'recipient_username', 'recipient_user_id')}),
+        ('Данные отправки', {'fields': ('sent_from_account', 'sent_from_phone', 'sent_at', 'sent_message_text')}),
+        ('Статус отслеживания', {'fields': ('is_delivered', 'is_read', 'read_at', 'is_replied', 'replied_at', 'reply_text')}),
+        ('Telegram метаданные', {'fields': ('telegram_message_id', 'chat_id'), 'classes': ('collapse',)}),
+        ('Дополнительно', {'fields': ('notes',), 'classes': ('collapse',)}),
+    )
+    
+    readonly_fields = ['sent_at']
+    
+    def recipient_display(self, obj):
+        username = f"@{obj.recipient_username}" if obj.recipient_username else ""
+        return format_html('<strong>{}</strong><br><small class="text-muted">{}</small>', obj.recipient_name, username)
+    recipient_display.short_description = 'Получатель'
+    
+    def status_badges(self, obj):
+        badges = []
+        if obj.is_delivered:
+            badges.append('<span class="badge bg-success">✓ Доставлено</span>')
+        if obj.is_read:
+            badges.append('<span class="badge bg-info">👁 Прочитано</span>')
+        if obj.is_replied:
+            badges.append('<span class="badge bg-primary">💬 Ответил</span>')
+        if not badges:
+            badges.append('<span class="badge bg-secondary">Отправлено</span>')
+        return format_html(' '.join(badges))
+    status_badges.short_description = 'Статус'
+    
+    def response_time_display(self, obj):
+        response_time = obj.get_response_time()
+        if response_time:
+            return format_html('<span class="badge bg-success">{}</span>', response_time)
+        read_time = obj.get_read_time()
+        if read_time:
+            return format_html('<span class="badge bg-info">{}</span>', read_time)
+        return '-'
+    response_time_display.short_description = 'Время реакции'
 
 
 # Настройка админки

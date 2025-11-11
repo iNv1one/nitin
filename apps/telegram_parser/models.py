@@ -689,3 +689,171 @@ class MessageTemplate(models.Model):
         for key, value in context.items():
             text = text.replace(f'{{{key}}}', str(value or ''))
         return text
+
+
+class SentMessageHistory(models.Model):
+    """
+    История отправленных сообщений через sender-аккаунт.
+    Отслеживает статус прочтения и ответы.
+    """
+    
+    # Связи
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='sent_messages',
+        verbose_name="Пользователь"
+    )
+    processed_message = models.ForeignKey(
+        'ProcessedMessage',
+        on_delete=models.CASCADE,
+        related_name='sent_history',
+        verbose_name="Исходное сообщение-лид",
+        null=True,
+        blank=True
+    )
+    
+    # Данные получателя
+    recipient_username = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Username получателя"
+    )
+    recipient_user_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Telegram ID получателя"
+    )
+    recipient_name = models.CharField(
+        max_length=500,
+        verbose_name="Имя получателя"
+    )
+    
+    # Данные отправки
+    sent_message_text = models.TextField(
+        verbose_name="Текст отправленного сообщения"
+    )
+    sent_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата и время отправки"
+    )
+    sent_from_account = models.CharField(
+        max_length=255,
+        verbose_name="Sender-аккаунт",
+        help_text="Username sender-аккаунта с которого отправили"
+    )
+    sent_from_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Телефон sender-аккаунта",
+        help_text="Номер телефона sender-аккаунта для точной идентификации"
+    )
+    
+    # Статусы отслеживания
+    is_delivered = models.BooleanField(
+        default=True,
+        verbose_name="Доставлено"
+    )
+    is_read = models.BooleanField(
+        default=False,
+        verbose_name="Прочитано"
+    )
+    read_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Время прочтения"
+    )
+    is_replied = models.BooleanField(
+        default=False,
+        verbose_name="Получен ответ"
+    )
+    replied_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Время ответа"
+    )
+    reply_text = models.TextField(
+        blank=True,
+        verbose_name="Текст ответа"
+    )
+    
+    # Метаданные Telegram
+    telegram_message_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="ID сообщения в Telegram"
+    )
+    chat_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="ID диалога в Telegram"
+    )
+    
+    # Дополнительная информация
+    template_used = models.ForeignKey(
+        'MessageTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Использованный шаблон"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Заметки"
+    )
+    
+    class Meta:
+        verbose_name = "Отправленное сообщение"
+        verbose_name_plural = "Отправленные сообщения"
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['user', '-sent_at']),
+            models.Index(fields=['sent_from_account', '-sent_at']),
+            models.Index(fields=['recipient_username']),
+            models.Index(fields=['is_read', 'is_replied']),
+            models.Index(fields=['-sent_at']),
+        ]
+    
+    def __str__(self):
+        return f"Сообщение для {self.recipient_name} от {self.sent_at.strftime('%d.%m.%Y %H:%M')}"
+    
+    def get_status_display(self):
+        """Возвращает текстовое описание статуса"""
+        if self.is_replied:
+            return "Ответил"
+        elif self.is_read:
+            return "Прочитано"
+        elif self.is_delivered:
+            return "Доставлено"
+        else:
+            return "Отправлено"
+    
+    def get_response_time(self):
+        """Время от отправки до ответа"""
+        if self.replied_at and self.sent_at:
+            delta = self.replied_at - self.sent_at
+            hours = delta.total_seconds() / 3600
+            if hours < 1:
+                minutes = delta.total_seconds() / 60
+                return f"{int(minutes)} мин"
+            elif hours < 24:
+                return f"{int(hours)} ч"
+            else:
+                days = delta.days
+                return f"{days} дн"
+        return None
+    
+    def get_read_time(self):
+        """Время от отправки до прочтения"""
+        if self.read_at and self.sent_at:
+            delta = self.read_at - self.sent_at
+            hours = delta.total_seconds() / 3600
+            if hours < 1:
+                minutes = delta.total_seconds() / 60
+                return f"{int(minutes)} мин"
+            elif hours < 24:
+                return f"{int(hours)} ч"
+            else:
+                days = delta.days
+                return f"{days} дн"
+        return None
