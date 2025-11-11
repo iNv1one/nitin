@@ -74,7 +74,17 @@
 
 <!-- Список сообщений -->
 <div class="row">
-    <div class="col-12">
+    <div class="col-12" id="messagesContainer">
+        <!-- Индикатор загрузки -->
+        <div class="text-center py-5" id="messagesLoader">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-3 text-muted">Загрузка сообщений...</p>
+        </div>
+        
+        <!-- Контент сообщений (скрыт по умолчанию) -->
+        <div id="messagesContent" style="display: none;">
         {% if page_obj %}
             {% for message in page_obj %}
             <div class="card mb-3 message-row status-{{ message.quality_status }} {% if not message.ai_approved %}bg-light{% endif %}"
@@ -223,6 +233,7 @@
                 <i class="fas fa-info-circle"></i> Пока нет сообщений
             </div>
         {% endif %}
+        </div><!-- Закрываем messagesContent -->
     </div>
 </div>
 
@@ -296,6 +307,15 @@
 </div>
 
 <script>
+// Показываем контент после загрузки страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Небольшая задержка для визуального эффекта загрузки
+    setTimeout(function() {
+        document.getElementById('messagesLoader').style.display = 'none';
+        document.getElementById('messagesContent').style.display = 'block';
+    }, 300);
+});
+
 function updateStatus(messageId, status, button) {
     // Отправляем запрос на обновление статуса
     fetch(`/message/${messageId}/update-status/`, {
