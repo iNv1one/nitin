@@ -14,7 +14,7 @@
     <style>
         .sidebar {
             position: fixed;
-            top: 56px; /* Высота navbar */
+            top: 0;
             left: 0;
             bottom: 0;
             width: 16.666667%; /* col-md-2 */
@@ -45,7 +45,7 @@
         
         .content-area {
             margin-left: 16.666667%; /* col-md-2 */
-            min-height: calc(100vh - 56px);
+            min-height: 100vh;
             padding: 20px;
             background-color: #f8faf9;
         }
@@ -94,18 +94,18 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'dashboard:dashboard' %}">
-                <i class="fas fa-robot"></i> NITIN
-            </a>
-        </div>
-    </nav>
-
     <div class="container-fluid p-0">
         <!-- Sidebar -->
         <div class="sidebar">
+            <!-- Logo -->
+            <div class="text-center mb-4 pb-3 border-bottom">
+                <a href="{% url 'dashboard:dashboard' %}" class="text-decoration-none">
+                    <h4 class="text-primary mb-0">
+                        <i class="fas fa-robot"></i> NITIN
+                    </h4>
+                </a>
+            </div>
+            
             <div class="sidebar-nav">
                 <nav class="nav flex-column">
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
