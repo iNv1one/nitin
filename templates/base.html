@@ -160,21 +160,31 @@
                 </nav>
             </div>
             
-            <!-- User Profile Section -->
+            <!-- User Profile Dropdown -->
             <div class="mt-auto p-3 border-top">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
-                    <div class="flex-grow-1">
-                        <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
-                        <small class="text-muted">{{ user.email }}</small>
-                    </div>
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" 
+                       id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
+                        <div>
+                            <div class="fw-bold text-dark">{{ user.get_full_name|default:user.username }}</div>
+                            <small class="text-muted">{{ user.email }}</small>
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'profile' %}">
+                                <i class="fas fa-user-cog me-2"></i> Профиль
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i> Выход
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-                <a class="btn btn-sm btn-outline-primary w-100 mb-1" href="{% url 'profile' %}">
-                    <i class="fas fa-user-cog"></i> Профиль
-                </a>
-                <a class="btn btn-sm btn-outline-danger w-100" href="{% url 'logout' %}">
-                    <i class="fas fa-sign-out-alt"></i> Выход
-                </a>
             </div>
             
             <!-- System Status -->
