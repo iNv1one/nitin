@@ -93,7 +93,7 @@
                                 {% if message.ai_approved %}
                                 <span class="badge bg-success ms-2"><i class="fas fa-robot"></i> ✓ Одобрено ИИ</span>
                                 {% else %}
-                                <span class="badge bg-danger ms-2"><i class="fas fa-robot"></i> ✗ Отклонено ИИ</span>
+                                <span class="badge ms-2" style="background-color: #d7dde3; color: #000;">Отклонено ИИ</span>
                                 {% endif %}
                             </h5>
                             <p class="card-text">{{ message.message_text|truncatewords:50 }}</p>
@@ -103,7 +103,7 @@
                                 <strong><i class="fas fa-tags"></i> Ключевые слова:</strong>
                                 {% if message.matched_keywords %}
                                     {% for keyword in message.matched_keywords %}
-                                    <span class="badge bg-info">{{ keyword }}</span>
+                                    <span class="badge" style="background-color: #c4eedc; color: #000;">{{ keyword }}</span>
                                     {% endfor %}
                                 {% else %}
                                 <span class="text-muted">нет</span>
