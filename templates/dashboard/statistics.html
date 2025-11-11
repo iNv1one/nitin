@@ -136,29 +136,51 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Топ-10 групп ключевых слов</h5>
+                    <h5 class="mb-0">Аналитика обработки сообщений</h5>
                 </div>
                 <div class="card-body">
-                    {% if keyword_group_stats %}
                     <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Группа</th>
-                                <th class="text-end">Сообщений</th>
-                            </tr>
-                        </thead>
                         <tbody>
-                            {% for stat in keyword_group_stats %}
                             <tr>
-                                <td>{{ stat.keyword_group__name }}</td>
-                                <td class="text-end"><strong>{{ stat.count }}</strong></td>
+                                <td><i class="fas fa-inbox text-primary me-2"></i>Всего сообщений с ключевыми словами</td>
+                                <td class="text-end"><strong class="text-primary fs-5">{{ total_messages }}</strong></td>
                             </tr>
-                            {% endfor %}
+                            <tr>
+                                <td><i class="fas fa-robot text-success me-2"></i>ИИ одобрил</td>
+                                <td class="text-end">
+                                    <strong class="text-success">{{ ai_approved }}</strong>
+                                    {% if total_messages > 0 %}
+                                    <small class="text-muted ms-2">({% widthratio ai_approved total_messages 100 %}%)</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-times-circle text-danger me-2"></i>ИИ отверг</td>
+                                <td class="text-end">
+                                    <strong class="text-danger">{{ ai_rejected }}</strong>
+                                    <small class="text-muted ms-2">(пока не логируется)</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-circle text-secondary me-2"></i>Без AI проверки</td>
+                                <td class="text-end">
+                                    <strong class="text-secondary">{{ messages_without_ai }}</strong>
+                                    {% if total_messages > 0 %}
+                                    <small class="text-muted ms-2">({% widthratio messages_without_ai total_messages 100 %}%)</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="table-info">
+                                <td><i class="fas fa-paper-plane text-info me-2"></i>Написали через sender-аккаунт</td>
+                                <td class="text-end">
+                                    <strong class="text-info fs-5">{{ sender_contacted }}</strong>
+                                    {% if total_messages > 0 %}
+                                    <small class="text-muted ms-2">({% widthratio sender_contacted total_messages 100 %}%)</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
-                    {% else %}
-                    <p class="text-muted">Нет данных за выбранный период</p>
-                    {% endif %}
                 </div>
             </div>
         </div>

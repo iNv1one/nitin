@@ -835,12 +835,22 @@ def statistics(request):
     # Общая статистика
     total_messages = messages.count()
     
-    # Статистика по AI фильтру
-    ai_approved = messages.exclude(ai_result='').exclude(ai_result__icontains='error').filter(
+    # Статистика по обработке сообщений
+    # Сообщения, которые прошли через AI фильтр (где ai_result не пустой)
+    ai_checked_messages = messages.exclude(ai_result='').exclude(ai_result__icontains='error')
+    ai_approved = ai_checked_messages.filter(
         Q(ai_result__icontains='YES') | Q(ai_result__icontains='Y')
     ).count()
     
-    ai_rejected_count = messages.exclude(ai_result='').exclude(ai_result__icontains='error').count() - ai_approved
+    # Сообщения без AI проверки (где AI фильтр не был включен)
+    messages_without_ai = messages.filter(ai_result='').count()
+    
+    # ИИ отверг = 0 (отклоненные сообщения не попадают в ProcessedMessage)
+    # В будущем можно добавить отдельную таблицу для логирования отклонений
+    ai_rejected_count = 0
+    
+    # Сообщения, после которых написали пользователю через sender-аккаунт
+    sender_contacted = messages.filter(message_sent=True).count()
     
     # Статистика по статусам quality_status
     status_stats = {
@@ -853,11 +863,6 @@ def statistics(request):
     # Статистика по дополнительным флагам
     dialog_started = messages.filter(dialog_started=True).count()
     sale_made = messages.filter(sale_made=True).count()
-    
-    # Статистика по группам ключевых слов (топ-10)
-    keyword_group_stats = messages.values('keyword_group__name').annotate(
-        count=Count('id')
-    ).order_by('-count')[:10]
     
     # Детальную статистику загружаем через AJAX - убираем из основной загрузки
     # detailed_group_stats и detailed_chat_stats будут загружены асинхронно
@@ -884,10 +889,11 @@ def statistics(request):
         'total_messages': total_messages,
         'ai_approved': ai_approved,
         'ai_rejected': ai_rejected_count,
+        'sender_contacted': sender_contacted,
+        'messages_without_ai': messages_without_ai,
         'status_stats': status_stats,
         'dialog_started': dialog_started,
         'sale_made': sale_made,
-        'keyword_group_stats': keyword_group_stats,
         'daily_stats': daily_stats,
         'daily_stats_json': json.dumps(daily_stats),  # Для JavaScript
     }
