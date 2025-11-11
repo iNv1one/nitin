@@ -50,20 +50,14 @@ def dashboard(request):
     total_messages = messages.count()
     
     # Статистика по обработке сообщений
-    # Сообщения, которые прошли через AI фильтр (где ai_result не пустой)
-    ai_checked_messages = messages.exclude(ai_result='').exclude(ai_result__icontains='error')
-    ai_approved = ai_checked_messages.filter(
-        Q(ai_result__icontains='YES') | Q(ai_result__icontains='Y')
-    ).count()
+    # Одобренные AI (или без AI проверки)
+    ai_approved = messages.filter(ai_approved=True).count()
+    
+    # Отклоненные AI
+    ai_rejected_count = messages.filter(ai_approved=False).count()
     
     # Сообщения без AI проверки (где AI фильтр не был включен)
     messages_without_ai = messages.filter(ai_result='').count()
-    
-    # Отклоненные AI сообщения из отдельной таблицы
-    ai_rejected_count = RejectedMessage.objects.filter(
-        user=user,
-        rejected_at__gte=start_date
-    ).count()
     
     # Сообщения, после которых написали пользователю через sender-аккаунт
     sender_contacted = messages.filter(message_sent=True).count()
