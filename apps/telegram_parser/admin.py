@@ -438,9 +438,6 @@ class GlobalChatAdmin(admin.ModelAdmin):
                 f"❌ Ошибка: {str(e)}. Проверьте настройки sudo для пользователя веб-сервера.",
                 level='ERROR'
             )
-                f"❌ Ошибка: {str(e)}",
-                level='ERROR'
-            )
     
     def invite_link_display(self, obj):
         """Отображение ссылки на чат"""
