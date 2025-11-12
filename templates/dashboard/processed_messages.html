@@ -2,6 +2,30 @@
 
 {% block title %}Обработанные сообщения - NITIN{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Стили пагинации */
+    .pagination .page-link {
+        background-color: white;
+        border-color: #d7dde3;
+        color: #333;
+    }
+    
+    .pagination .page-link:hover {
+        background-color: #f8f9fa;
+        border-color: #d7dde3;
+        color: #333;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #d7dde3;
+        border-color: #d7dde3;
+        color: #333;
+        z-index: 1;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
@@ -199,14 +223,18 @@
             
             <!-- Пагинация -->
             {% if page_obj.has_other_pages %}
-            <nav aria-label="Page navigation" class="mt-4">
+            <nav aria-label="Pagination" class="mt-4">
                 <ul class="pagination justify-content-center">
                     {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page=1{% if ai_status_filter %}&ai_status={{ ai_status_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if keyword_filter %}&keyword={{ keyword_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if progress_filter %}&progress={{ progress_filter }}{% endif %}">Первая</a>
+                        <a class="page-link" href="?page=1{% if ai_status_filter %}&ai_status={{ ai_status_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if keyword_filter %}&keyword={{ keyword_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if progress_filter %}&progress={{ progress_filter }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if ai_status_filter %}&ai_status={{ ai_status_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if keyword_filter %}&keyword={{ keyword_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if progress_filter %}&progress={{ progress_filter }}{% endif %}">Предыдущая</a>
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if ai_status_filter %}&ai_status={{ ai_status_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if keyword_filter %}&keyword={{ keyword_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if progress_filter %}&progress={{ progress_filter }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
                     </li>
                     {% endif %}
 
@@ -218,10 +246,14 @@
 
                     {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if ai_status_filter %}&ai_status={{ ai_status_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if keyword_filter %}&keyword={{ keyword_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if progress_filter %}&progress={{ progress_filter }}{% endif %}">Следующая</a>
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if ai_status_filter %}&ai_status={{ ai_status_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if keyword_filter %}&keyword={{ keyword_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if progress_filter %}&progress={{ progress_filter }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if ai_status_filter %}&ai_status={{ ai_status_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if keyword_filter %}&keyword={{ keyword_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if progress_filter %}&progress={{ progress_filter }}{% endif %}">Последняя</a>
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if ai_status_filter %}&ai_status={{ ai_status_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if keyword_filter %}&keyword={{ keyword_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if progress_filter %}&progress={{ progress_filter }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
                     </li>
                     {% endif %}
                 </ul>
