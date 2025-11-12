@@ -171,7 +171,6 @@
                             <th>AI Фильтр</th>
                             <th>Статус</th>
                             <th>Создана</th>
-                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -200,21 +199,6 @@
                                 </label>
                             </td>
                             <td>{{ group.created_at|date:"d.m.Y H:i" }}</td>
-                            <td>
-                <div class="btn-group" role="group">
-                                    <a href="{% url 'dashboard:edit_keyword_group' group.id %}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form method="post" action="{% url 'dashboard:delete_keyword_group' group.id %}" class="d-inline"
-                                          onsubmit="event.stopPropagation(); return confirm('Вы уверены, что хотите удалить группу {{ group.name }}?');"
-                                          onclick="event.stopPropagation();">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -454,6 +438,7 @@ function submitCreateForm(form) {
             const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
             offcanvas.hide();
             
+            
             // Перезагружаем страницу для отображения изменений
             location.reload();
         } else {
@@ -470,6 +455,41 @@ function submitCreateForm(form) {
         alert('Ошибка при создании');
     });
 }
+
+// Функция для удаления группы из offcanvas
+function deleteGroup(groupId, groupName) {
+    if (confirm(`Вы уверены, что хотите удалить группу "${groupName}"?`)) {
+        // Получаем CSRF токен из формы
+        const csrfToken = document.querySelector('#editGroupContent [name=csrfmiddlewaretoken]').value;
+        
+        // Отправляем POST запрос на удаление
+        fetch(`/keywords/${groupId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Закрываем offcanvas
+                const offcanvasEl = document.getElementById('editGroupOffcanvas');
+                const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                offcanvas.hide();
+                
+                // Перезагружаем страницу
+                location.reload();
+            } else {
+                alert('Ошибка при удалении группы');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting group:', error);
+            alert('Ошибка при удалении группы');
+        });
+    }
+}
 </script>
 {% endblock %}
+
 

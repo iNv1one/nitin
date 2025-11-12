@@ -110,9 +110,14 @@ input:disabled + .slider {
                         </label>
                     </div>
                     
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button>
-                        <a href="{% url 'dashboard:keyword_groups' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Отмена</a>
+                    <div class="d-flex gap-2 justify-content-between">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button>
+                            <a href="{% url 'dashboard:keyword_groups' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Отмена</a>
+                        </div>
+                        <button type="button" class="btn btn-danger" onclick="deleteGroup({{ group.id }}, '{{ group.name }}')">
+                            <i class="fas fa-trash"></i> Удалить группу
+                        </button>
                     </div>
                 </form>
             </div>
@@ -121,6 +126,26 @@ input:disabled + .slider {
 </div>
 
 <script>
+function deleteGroup(groupId, groupName) {
+    if (confirm(`Вы уверены, что хотите удалить группу "${groupName}"?`)) {
+        // Создаем форму для удаления
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/keywords/${groupId}/delete/`;
+        
+        // CSRF токен
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
 // AI фильтр переключатель - показывать/скрывать поле для промпта
 document.getElementById('use_ai_filter').addEventListener('change', function() {
     const aiPromptContainer = document.getElementById('ai_prompt_container');
