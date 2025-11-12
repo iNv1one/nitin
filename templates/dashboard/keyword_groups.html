@@ -488,6 +488,9 @@ function submitCreateForm(form) {
     const formData = new FormData(form);
     const url = form.action || '{% url "dashboard:create_keyword_group" %}';
     
+    console.log('Submitting to URL:', url);
+    console.log('FormData:', Array.from(formData.entries()));
+    
     fetch(url, {
         method: 'POST',
         body: formData,
@@ -496,14 +499,22 @@ function submitCreateForm(form) {
         }
     })
     .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers.get('content-type'));
+        
         // Проверяем, что ответ действительно JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
-            throw new TypeError("Сервер вернул не JSON ответ. Возможно вы не авторизованы.");
+            // Логируем текст ответа для отладки
+            return response.text().then(text => {
+                console.error('Server response (not JSON):', text.substring(0, 500));
+                throw new TypeError("Сервер вернул не JSON ответ. Проверьте консоль для деталей.");
+            });
         }
         return response.json();
     })
     .then(data => {
+        console.log('Parsed JSON data:', data);
         if (data.success) {
             // Закрываем offcanvas
             const offcanvasEl = document.getElementById('createGroupOffcanvas');
