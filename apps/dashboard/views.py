@@ -139,6 +139,7 @@ def keyword_groups(request):
 
 @login_required
 @require_http_methods(["GET", "POST"])
+@login_required
 def create_keyword_group(request):
     """
     Создание новой группы ключевых слов
@@ -193,7 +194,7 @@ def create_keyword_group(request):
         
         # AJAX запрос
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': success_msg})
+            return JsonResponse({'success': True, 'message': success_msg, 'group_id': keyword_group.id})
         
         messages.success(request, success_msg)
         return redirect('dashboard:keyword_groups')
