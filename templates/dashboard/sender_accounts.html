@@ -2,6 +2,19 @@
 
 {% block title %}Sender-аккаунты - Telegram Parser{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* Кликабельные строки таблицы */
+    .clickable-row {
+        cursor: pointer;
+    }
+    
+    .clickable-row:hover {
+        background-color: #e3e8ed !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
@@ -41,12 +54,11 @@
                                 <th>Телефон</th>
                                 <th>Статус</th>
                                 <th>Дата добавления</th>
-                                <th class="text-end">Действия</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for account in sender_accounts %}
-                            <tr>
+                            <tr class="clickable-row" onclick="editAccount({{ account.id }}, '{{ account.name|escapejs }}', '{{ account.phone|escapejs }}', {{ account.api_id }}, '{{ account.api_hash|escapejs }}', {{ account.is_active|lower }}, {{ account.is_connected|lower }})">
                                 <td>{{ account.name }}</td>
                                 <td>{{ account.phone }}</td>
                                 <td>
@@ -60,22 +72,6 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ account.created_at|date:"d.m.Y H:i" }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary" 
-                                            onclick="editAccount({{ account.id }}, '{{ account.name }}', '{{ account.phone }}', {{ account.api_id }}, '{{ account.api_hash }}', {{ account.is_active|lower }})">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" 
-                                            onclick="deleteAccount({{ account.id }}, '{{ account.name }}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    {% if not account.is_connected %}
-                                    <a href="{% url 'dashboard:authorize_sender_account' account.id %}" 
-                                       class="btn btn-sm btn-success">
-                                        <i class="fas fa-key"></i> Авторизовать
-                                    </a>
-                                    {% endif %}
-                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -199,13 +195,25 @@
                 </div>
             </div>
             
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 mb-3">
                 <button type="submit" class="btn btn-dark flex-grow-1">
                     <i class="fas fa-save"></i> Сохранить
                 </button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">
                     Отмена
                 </button>
+            </div>
+            
+            <!-- Дополнительные действия -->
+            <div class="border-top pt-3">
+                <div class="d-grid gap-2">
+                    <a id="authorizeAccountBtn" href="#" class="btn btn-success" style="display: none;">
+                        <i class="fas fa-key"></i> Авторизовать аккаунт
+                    </a>
+                    <button type="button" class="btn btn-danger" onclick="deleteCurrentAccount()">
+                        <i class="fas fa-trash"></i> Удалить аккаунт
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -240,13 +248,22 @@ document.getElementById('addAccountForm').addEventListener('submit', function(e)
 });
 
 // Открытие формы редактирования
-function editAccount(id, name, phone, api_id, api_hash, is_active) {
+function editAccount(id, name, phone, api_id, api_hash, is_active, is_connected) {
     document.getElementById('edit_account_id').value = id;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_phone').value = phone;
     document.getElementById('edit_api_id').value = api_id;
     document.getElementById('edit_api_hash').value = api_hash;
     document.getElementById('edit_is_active').checked = is_active;
+    
+    // Показываем кнопку "Авторизовать" если аккаунт не подключен
+    const authorizeBtn = document.getElementById('authorizeAccountBtn');
+    if (!is_connected) {
+        authorizeBtn.style.display = 'block';
+        authorizeBtn.href = `/sender-accounts/${id}/authorize/`;
+    } else {
+        authorizeBtn.style.display = 'none';
+    }
     
     document.getElementById('editAccountForm').action = `/sender-accounts/${id}/update/`;
     
@@ -281,13 +298,16 @@ document.getElementById('editAccountForm').addEventListener('submit', function(e
     });
 });
 
-// Удаление аккаунта
-function deleteAccount(id, name) {
-    if (!confirm(`Вы уверены, что хотите удалить аккаунт "${name}"?`)) {
+// Удаление текущего аккаунта из offcanvas
+function deleteCurrentAccount() {
+    const accountId = document.getElementById('edit_account_id').value;
+    const accountName = document.getElementById('edit_name').value;
+    
+    if (!confirm(`Вы уверены, что хотите удалить аккаунт "${accountName}"?`)) {
         return;
     }
     
-    fetch(`/sender-accounts/${id}/delete/`, {
+    fetch(`/sender-accounts/${accountId}/delete/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
