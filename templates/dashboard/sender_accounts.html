@@ -58,7 +58,21 @@
                         </thead>
                         <tbody>
                             {% for account in sender_accounts %}
-                            <tr class="clickable-row" onclick="editAccount({{ account.id }}, '{{ account.name|escapejs }}', '{{ account.phone|escapejs }}', {{ account.api_id }}, '{{ account.api_hash|escapejs }}', {{ account.is_active|lower }}, {{ account.is_connected|lower }})">
+                            <tr class="clickable-row" onclick="editAccount(
+                                {{ account.id }}, 
+                                '{{ account.name|escapejs }}', 
+                                '{{ account.phone|escapejs }}', 
+                                {{ account.api_id }}, 
+                                '{{ account.api_hash|escapejs }}', 
+                                {{ account.is_active|lower }}, 
+                                {{ account.is_connected|lower }},
+                                {{ account.initial_delay_min }},
+                                {{ account.initial_delay_max }},
+                                {{ account.message_delay_min }},
+                                {{ account.message_delay_max }},
+                                {{ account.daily_limit }},
+                                {{ account.messages_sent_today }}
+                            )">
                                 <td>{{ account.name }}</td>
                                 <td>{{ account.phone }}</td>
                                 <td>
@@ -136,6 +150,48 @@
                 </div>
             </div>
             
+            <!-- Настройки отправки сообщений -->
+            <div class="border-top pt-3 mb-3">
+                <h6 class="mb-3">Настройки отправки</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">Задержка перед первым сообщением (сек)</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="add_initial_delay_min" 
+                                   name="initial_delay_min" min="0" value="30" placeholder="Мин">
+                        </div>
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="add_initial_delay_max" 
+                                   name="initial_delay_max" min="0" value="60" placeholder="Макс">
+                        </div>
+                    </div>
+                    <div class="form-text">Случайная задержка от 30 до 60 секунд</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Задержка между сообщениями (сек)</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="add_message_delay_min" 
+                                   name="message_delay_min" min="0" value="60" placeholder="Мин">
+                        </div>
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="add_message_delay_max" 
+                                   name="message_delay_max" min="0" value="180" placeholder="Макс">
+                        </div>
+                    </div>
+                    <div class="form-text">Случайная задержка от 60 до 180 секунд</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="add_daily_limit" class="form-label">Лимит сообщений в день</label>
+                    <input type="number" class="form-control" id="add_daily_limit" 
+                           name="daily_limit" min="1" value="30">
+                    <div class="form-text">Максимум сообщений в день</div>
+                </div>
+            </div>
+            
             <div class="alert alert-info">
                 <small>
                     <strong>Важно:</strong> После добавления аккаунта нужно будет пройти авторизацию через Telegram.
@@ -195,6 +251,48 @@
                 </div>
             </div>
             
+            <!-- Настройки отправки сообщений -->
+            <div class="border-top pt-3 mb-3">
+                <h6 class="mb-3">Настройки отправки</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">Задержка перед первым сообщением (сек)</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="edit_initial_delay_min" 
+                                   name="initial_delay_min" min="0" value="30" placeholder="Мин">
+                        </div>
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="edit_initial_delay_max" 
+                                   name="initial_delay_max" min="0" value="60" placeholder="Макс">
+                        </div>
+                    </div>
+                    <div class="form-text">Случайная задержка от 30 до 60 секунд</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Задержка между сообщениями (сек)</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="edit_message_delay_min" 
+                                   name="message_delay_min" min="0" value="60" placeholder="Мин">
+                        </div>
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="edit_message_delay_max" 
+                                   name="message_delay_max" min="0" value="180" placeholder="Макс">
+                        </div>
+                    </div>
+                    <div class="form-text">Случайная задержка от 60 до 180 секунд</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="edit_daily_limit" class="form-label">Лимит сообщений в день</label>
+                    <input type="number" class="form-control" id="edit_daily_limit" 
+                           name="daily_limit" min="1" value="30">
+                    <div id="edit_messages_counter" class="form-text">Отправлено сегодня: 0 из 30</div>
+                </div>
+            </div>
+            
             <div class="d-flex gap-2 mb-3">
                 <button type="submit" class="btn btn-dark flex-grow-1">
                     <i class="fas fa-save"></i> Сохранить
@@ -248,13 +346,26 @@ document.getElementById('addAccountForm').addEventListener('submit', function(e)
 });
 
 // Открытие формы редактирования
-function editAccount(id, name, phone, api_id, api_hash, is_active, is_connected) {
+function editAccount(id, name, phone, api_id, api_hash, is_active, is_connected, 
+                     initial_delay_min, initial_delay_max, message_delay_min, message_delay_max, 
+                     daily_limit, messages_sent_today) {
     document.getElementById('edit_account_id').value = id;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_phone').value = phone;
     document.getElementById('edit_api_id').value = api_id;
     document.getElementById('edit_api_hash').value = api_hash;
     document.getElementById('edit_is_active').checked = is_active;
+    
+    // Заполняем поля настроек отправки
+    document.getElementById('edit_initial_delay_min').value = initial_delay_min;
+    document.getElementById('edit_initial_delay_max').value = initial_delay_max;
+    document.getElementById('edit_message_delay_min').value = message_delay_min;
+    document.getElementById('edit_message_delay_max').value = message_delay_max;
+    document.getElementById('edit_daily_limit').value = daily_limit;
+    
+    // Обновляем счетчик сообщений
+    document.getElementById('edit_messages_counter').textContent = 
+        `Отправлено сегодня: ${messages_sent_today} из ${daily_limit}`;
     
     // Показываем кнопку "Авторизовать" если аккаунт не подключен
     const authorizeBtn = document.getElementById('authorizeAccountBtn');

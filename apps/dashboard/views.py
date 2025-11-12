@@ -1572,6 +1572,13 @@ def create_sender_account(request):
         api_hash = request.POST.get('api_hash', '').strip()
         is_active = request.POST.get('is_active') == 'on'
         
+        # Получаем настройки отправки (с дефолтными значениями)
+        initial_delay_min = int(request.POST.get('initial_delay_min', 30))
+        initial_delay_max = int(request.POST.get('initial_delay_max', 60))
+        message_delay_min = int(request.POST.get('message_delay_min', 60))
+        message_delay_max = int(request.POST.get('message_delay_max', 180))
+        daily_limit = int(request.POST.get('daily_limit', 30))
+        
         if not all([name, phone, api_id, api_hash]):
             return JsonResponse({
                 'success': False,
@@ -1592,7 +1599,12 @@ def create_sender_account(request):
             phone=phone,
             api_id=int(api_id),
             api_hash=api_hash,
-            is_active=is_active
+            is_active=is_active,
+            initial_delay_min=initial_delay_min,
+            initial_delay_max=initial_delay_max,
+            message_delay_min=message_delay_min,
+            message_delay_max=message_delay_max,
+            daily_limit=daily_limit
         )
         
         logger.info(f"Created sender account {account.id} for user {request.user.id}")
@@ -1625,6 +1637,13 @@ def update_sender_account(request, account_id):
         api_hash = request.POST.get('api_hash', '').strip()
         is_active = request.POST.get('is_active') == 'on'
         
+        # Получаем настройки отправки
+        initial_delay_min = int(request.POST.get('initial_delay_min', account.initial_delay_min))
+        initial_delay_max = int(request.POST.get('initial_delay_max', account.initial_delay_max))
+        message_delay_min = int(request.POST.get('message_delay_min', account.message_delay_min))
+        message_delay_max = int(request.POST.get('message_delay_max', account.message_delay_max))
+        daily_limit = int(request.POST.get('daily_limit', account.daily_limit))
+        
         if not all([name, api_id, api_hash]):
             return JsonResponse({
                 'success': False,
@@ -1636,6 +1655,11 @@ def update_sender_account(request, account_id):
         account.api_id = int(api_id)
         account.api_hash = api_hash
         account.is_active = is_active
+        account.initial_delay_min = initial_delay_min
+        account.initial_delay_max = initial_delay_max
+        account.message_delay_min = message_delay_min
+        account.message_delay_max = message_delay_max
+        account.daily_limit = daily_limit
         account.save()
         
         logger.info(f"Updated sender account {account.id} for user {request.user.id}")

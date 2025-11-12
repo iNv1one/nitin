@@ -908,6 +908,45 @@ class SenderAccount(models.Model):
         verbose_name="Активен",
         help_text="Использовать этот аккаунт для отправки"
     )
+    
+    # Настройки контроля отправки
+    initial_delay_min = models.IntegerField(
+        default=30,
+        verbose_name="Мин. задержка перед отправкой (сек)",
+        help_text="Минимальная задержка перед первой отправкой сообщения"
+    )
+    initial_delay_max = models.IntegerField(
+        default=60,
+        verbose_name="Макс. задержка перед отправкой (сек)",
+        help_text="Максимальная задержка перед первой отправкой сообщения"
+    )
+    message_delay_min = models.IntegerField(
+        default=60,
+        verbose_name="Мин. задержка между сообщениями (сек)",
+        help_text="Минимальная пауза между отправкой сообщений"
+    )
+    message_delay_max = models.IntegerField(
+        default=180,
+        verbose_name="Макс. задержка между сообщениями (сек)",
+        help_text="Максимальная пауза между отправкой сообщений"
+    )
+    daily_limit = models.IntegerField(
+        default=30,
+        verbose_name="Лимит сообщений в день",
+        help_text="Максимальное количество сообщений в сутки"
+    )
+    messages_sent_today = models.IntegerField(
+        default=0,
+        verbose_name="Отправлено сегодня",
+        help_text="Счетчик отправленных сообщений за сегодня"
+    )
+    last_message_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Дата последнего сообщения",
+        help_text="Дата последней отправки (для сброса счетчика)"
+    )
+    
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Дата добавления"
@@ -934,6 +973,46 @@ class SenderAccount(models.Model):
     def is_connected(self):
         """Проверяет, подключен ли аккаунт (есть ли session_string)"""
         return bool(self.session_string)
+    
+    @property
+    def messages_remaining_today(self):
+        """Сколько сообщений можно еще отправить сегодня"""
+        from django.utils import timezone
+        today = timezone.now().date()
+        
+        # Если последнее сообщение было не сегодня, сбрасываем счетчик
+        if self.last_message_date != today:
+            return self.daily_limit
+        
+        return max(0, self.daily_limit - self.messages_sent_today)
+    
+    @property
+    def can_send_message(self):
+        """Можно ли отправить сообщение (не превышен ли лимит)"""
+        return self.messages_remaining_today > 0
+    
+    def reset_daily_counter_if_needed(self):
+        """Сбрасывает счетчик если наступил новый день"""
+        from django.utils import timezone
+        today = timezone.now().date()
+        
+        if self.last_message_date != today:
+            self.messages_sent_today = 0
+            self.last_message_date = today
+            self.save(update_fields=['messages_sent_today', 'last_message_date'])
+    
+    def increment_message_counter(self):
+        """Увеличивает счетчик отправленных сообщений"""
+        from django.utils import timezone
+        today = timezone.now().date()
+        
+        # Сбрасываем счетчик если новый день
+        if self.last_message_date != today:
+            self.messages_sent_today = 0
+        
+        self.messages_sent_today += 1
+        self.last_message_date = today
+        self.save(update_fields=['messages_sent_today', 'last_message_date'])
     
     def toggle_active(self):
         """Переключить статус активности"""
