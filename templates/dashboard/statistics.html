@@ -201,15 +201,13 @@
                                     {% endif %}
                                 </td>
                             </tr>
-                            <tr class="table-info">
-                                <td><strong>Отправлено сообщений через sender</strong></td>
-                                <td class="text-end"><strong>{{ sender_contacted }}</strong></td>
+                            <tr>
+                                <td>Отправлено сообщений через sender</td>
+                                <td class="text-end">{{ sender_contacted }}</td>
                                 <td class="text-end">
-                                    <strong>
                                     {% if total_messages > 0 %}
                                     {% widthratio sender_contacted total_messages 100 %}%
                                     {% endif %}
-                                    </strong>
                                 </td>
                             </tr>
                         </tbody>
@@ -300,7 +298,7 @@ function loadGroupStats(period) {
                             <tbody>
                                 ${data.stats.map(group => `
                                     <tr>
-                                        <td><strong>${group.name}</strong></td>
+                                        <td>${group.name}</td>
                                         <td class="text-end">${group.total}</td>
                                         <td class="text-end">${group.qualified}</td>
                                         <td class="text-end">${group.unqualified}</td>
@@ -356,7 +354,7 @@ function loadChatStats(period) {
                             <tbody>
                                 ${data.stats.map(chat => `
                                     <tr>
-                                        <td><strong>${chat.name}</strong></td>
+                                        <td>${chat.name}</td>
                                         <td class="text-end">${chat.total}</td>
                                         <td class="text-end">${chat.qualified}</td>
                                         <td class="text-end">${chat.unqualified}</td>
