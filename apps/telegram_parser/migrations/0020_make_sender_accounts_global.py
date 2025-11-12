@@ -33,13 +33,7 @@ class Migration(migrations.Migration):
             ),
         ),
         
-        # 3. Удаляем старый индекс с user
-        migrations.RemoveIndex(
-            model_name='senderaccount',
-            name='telegram_pa_user_id_c73870_idx',
-        ),
-        
-        # 4. Добавляем новые индексы без user
+        # 3. Добавляем новые индексы без user
         migrations.AddIndex(
             model_name='senderaccount',
             index=models.Index(fields=['is_active'], name='sender_is_active_idx'),
