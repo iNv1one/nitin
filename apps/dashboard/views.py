@@ -1497,14 +1497,23 @@ def edit_message_template(request, template_id):
     template = get_object_or_404(MessageTemplate, id=template_id, user=request.user)
     
     if request.method == 'POST':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         template.name = request.POST.get('name')
         template.subject = request.POST.get('subject', '')
         template.template_text = request.POST.get('template_text')
         template.is_default = request.POST.get('is_default') == 'on'
         template.save()
         
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'template_id': template.id,
+                'message': f'Шаблон "{template.name}" обновлен'
+            })
+        
         messages.success(request, f'Шаблон "{template.name}" обновлен')
-        return redirect('dashboard:message_templates')
+        return redirect('dashboard:keyword_groups')
     
     context = {
         'template': template,
@@ -1521,8 +1530,16 @@ def delete_message_template(request, template_id):
     name = template.name
     template.delete()
     
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    if is_ajax:
+        return JsonResponse({
+            'success': True,
+            'message': f'Шаблон "{name}" удален'
+        })
+    
     messages.success(request, f'Шаблон "{name}" удален')
-    return redirect('dashboard:message_templates')
+    return redirect('dashboard:keyword_groups')
 
 
 @login_required
