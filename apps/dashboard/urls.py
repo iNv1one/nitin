@@ -4,8 +4,8 @@ from . import views
 app_name = 'dashboard'
 
 urlpatterns = [
-    # Р“Р»Р°РІРЅР°СЏ СЃС‚СЂР°РЅРёС†Р° dashboard
-    path('', views.dashboard, name='dashboard'),
+    # Главная страница - статистика
+    path('', views.statistics, name='dashboard'),
     
     # РЈРїСЂР°РІР»РµРЅРёРµ РіСЂСѓРїРїР°РјРё РєР»СЋС‡РµРІС‹С… СЃР»РѕРІ
     path('keywords/', views.keyword_groups, name='keyword_groups'),

@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 @login_required
-def dashboard(request):
+def statistics(request):
     """
-    Главная страница dashboard - показываем статистику
+    Главная страница - показываем статистику
     """
     user = request.user
     
