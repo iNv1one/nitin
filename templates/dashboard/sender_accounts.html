@@ -53,6 +53,7 @@
                                 <th>Название</th>
                                 <th>Телефон</th>
                                 <th>Статус</th>
+                                <th>Отправлено сегодня</th>
                                 <th>Дата добавления</th>
                             </tr>
                         </thead>
@@ -84,6 +85,11 @@
                                     {% if account.is_active %}
                                         <span class="badge bg-primary">Активен</span>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        {{ account.messages_sent_today }} из {{ account.daily_limit }}
+                                    </span>
                                 </td>
                                 <td>{{ account.created_at|date:"d.m.Y H:i" }}</td>
                             </tr>
