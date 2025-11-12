@@ -592,7 +592,11 @@ function openCreateTemplatePanel() {
 }
 
 // Функция открытия панели редактирования шаблона
+let currentEditingTemplateId = null; // Глобальная переменная для хранения ID
+
 function openEditTemplatePanel(templateId) {
+    currentEditingTemplateId = templateId; // Сохраняем ID
+    
     const offcanvas = new bootstrap.Offcanvas(document.getElementById('editTemplateOffcanvas'));
     const content = document.getElementById('editTemplateContent');
     
@@ -678,18 +682,13 @@ function submitEditTemplateForm() {
     const form = document.querySelector('#editTemplateContent form');
     const formData = new FormData(form);
     
-    // Получаем template ID из action URL формы
-    const actionUrl = form.getAttribute('action');
-    const match = actionUrl.match(/\/templates\/(\d+)\/edit\//);
-    
-    if (!match) {
+    // Используем сохраненный ID шаблона
+    if (!currentEditingTemplateId) {
         alert('Ошибка: не удалось определить ID шаблона');
         return;
     }
     
-    const templateId = match[1];
-    
-    fetch(`/templates/${templateId}/edit/`, {
+    fetch(`/templates/${currentEditingTemplateId}/edit/`, {
         method: 'POST',
         body: formData,
         headers: {
