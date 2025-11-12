@@ -865,13 +865,18 @@ class SentMessageHistory(models.Model):
 
 
 class SenderAccount(models.Model):
-    """Аккаунты для отправки сообщений лидам"""
+    """Аккаунты для отправки сообщений лидам (общие для всех пользователей)"""
     
+    # DEPRECATED: user поле оставлено для обратной совместимости
+    # Sender-аккаунты теперь общие для всех пользователей и управляются только админом
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='sender_accounts',
-        verbose_name="Пользователь"
+        verbose_name="Пользователь (устарело)",
+        help_text="Поле deprecated - аккаунты теперь общие"
     )
     name = models.CharField(
         max_length=100,
@@ -960,9 +965,10 @@ class SenderAccount(models.Model):
         verbose_name = "Sender-аккаунт"
         verbose_name_plural = "Sender-аккаунты"
         ordering = ['-created_at']
-        unique_together = [['user', 'phone']]
+        # unique_together убрано - аккаунты теперь общие для всех пользователей
         indexes = [
-            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['is_active']),
+            models.Index(fields=['phone']),
         ]
     
     def __str__(self):

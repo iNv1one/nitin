@@ -1216,16 +1216,19 @@ def send_message_to_lead(request, message_id):
 
 @login_required
 def sender_accounts(request):
-    """Управление sender-аккаунтами"""
+    """Управление sender-аккаунтами (только для админов)"""
     from apps.telegram_parser.models import SenderAccount
     
-    user = request.user
+    # Проверка прав доступа
+    if not request.user.is_staff:
+        messages.error(request, 'Доступ запрещен. Только для администраторов.')
+        return redirect('dashboard:dashboard')
     
-    # Получаем все sender-аккаунты пользователя
-    accounts = SenderAccount.objects.filter(user=user).order_by('-created_at')
+    # Получаем ВСЕ sender-аккаунты (общие для всех пользователей)
+    accounts = SenderAccount.objects.all().order_by('-created_at')
     
     context = {
-        'user': user,
+        'user': request.user,
         'sender_accounts': accounts,
     }
     
@@ -1444,8 +1447,15 @@ def disconnect_sender_account(request):
 @login_required
 @require_http_methods(['POST'])
 def create_sender_account(request):
-    """Создание нового sender-аккаунта"""
+    """Создание нового sender-аккаунта (только для админов)"""
     from apps.telegram_parser.models import SenderAccount
+    
+    # Проверка прав доступа
+    if not request.user.is_staff:
+        return JsonResponse({
+            'success': False,
+            'error': 'Доступ запрещен'
+        }, status=403)
     
     try:
         name = request.POST.get('name', '').strip()
@@ -1467,16 +1477,16 @@ def create_sender_account(request):
                 'error': 'Заполните все обязательные поля'
             }, status=400)
         
-        # Проверяем, нет ли уже аккаунта с таким телефоном у этого пользователя
-        if SenderAccount.objects.filter(user=request.user, phone=phone).exists():
+        # Проверяем, нет ли уже аккаунта с таким телефоном (теперь глобально)
+        if SenderAccount.objects.filter(phone=phone).exists():
             return JsonResponse({
                 'success': False,
                 'error': 'Аккаунт с таким номером уже добавлен'
             }, status=400)
         
-        # Создаем новый аккаунт
+        # Создаем новый аккаунт (БЕЗ привязки к пользователю - общий для всех)
         account = SenderAccount.objects.create(
-            user=request.user,
+            user=None,  # Не привязываем к пользователю
             name=name,
             phone=phone,
             api_id=int(api_id),
@@ -1489,7 +1499,7 @@ def create_sender_account(request):
             daily_limit=daily_limit
         )
         
-        logger.info(f"Created sender account {account.id} for user {request.user.id}")
+        logger.info(f"Admin {request.user.id} created global sender account {account.id}")
         
         return JsonResponse({
             'success': True,
@@ -1508,11 +1518,19 @@ def create_sender_account(request):
 @login_required
 @require_http_methods(['POST'])
 def update_sender_account(request, account_id):
-    """Обновление sender-аккаунта"""
+    """Обновление sender-аккаунта (только для админов)"""
     from apps.telegram_parser.models import SenderAccount
     
+    # Проверка прав доступа
+    if not request.user.is_staff:
+        return JsonResponse({
+            'success': False,
+            'error': 'Доступ запрещен'
+        }, status=403)
+    
     try:
-        account = get_object_or_404(SenderAccount, id=account_id, user=request.user)
+        # Убрана фильтрация по user - аккаунты общие
+        account = get_object_or_404(SenderAccount, id=account_id)
         
         name = request.POST.get('name', '').strip()
         api_id = request.POST.get('api_id', '').strip()
@@ -1544,7 +1562,7 @@ def update_sender_account(request, account_id):
         account.daily_limit = daily_limit
         account.save()
         
-        logger.info(f"Updated sender account {account.id} for user {request.user.id}")
+        logger.info(f"Admin {request.user.id} updated global sender account {account.id}")
         
         return JsonResponse({
             'success': True,
@@ -1562,14 +1580,23 @@ def update_sender_account(request, account_id):
 @login_required
 @require_http_methods(['POST'])
 def delete_sender_account(request, account_id):
-    """Удаление sender-аккаунта"""
+    """Удаление sender-аккаунта (только для админов)"""
     from apps.telegram_parser.models import SenderAccount
     
+    # Проверка прав доступа
+    if not request.user.is_staff:
+        return JsonResponse({
+            'success': False,
+            'error': 'Доступ запрещен'
+        }, status=403)
+    
     try:
-        account = get_object_or_404(SenderAccount, id=account_id, user=request.user)
+        # Убрана фильтрация по user - аккаунты общие
+        account = get_object_or_404(SenderAccount, id=account_id)
         account_name = account.name
         account.delete()
         
+        logger.info(f"Admin {request.user.id} deleted global sender account {account_id}")
         logger.info(f"Deleted sender account {account_id} ({account_name}) for user {request.user.id}")
         
         return JsonResponse({
@@ -1587,10 +1614,16 @@ def delete_sender_account(request, account_id):
 
 @login_required
 def authorize_sender_account(request, account_id):
-    """Страница авторизации конкретного sender-аккаунта"""
+    """Страница авторизации конкретного sender-аккаунта (только для админов)"""
     from apps.telegram_parser.models import SenderAccount
     
-    account = get_object_or_404(SenderAccount, id=account_id, user=request.user)
+    # Проверка прав доступа
+    if not request.user.is_staff:
+        messages.error(request, 'Доступ запрещен')
+        return redirect('dashboard:dashboard')
+    
+    # Убрана фильтрация по user - аккаунты общие
+    account = get_object_or_404(SenderAccount, id=account_id)
     
     if account.is_connected:
         messages.info(request, f'Аккаунт "{account.name}" уже подключен')
