@@ -486,7 +486,8 @@ function openCreatePanel() {
 
 function submitCreateForm(form) {
     const formData = new FormData(form);
-    const url = form.action || '{% url "dashboard:create_keyword_group" %}';
+    // Явно используем правильный URL, не берем из form.action
+    const url = '{% url "dashboard:create_keyword_group" %}';
     
     console.log('Submitting to URL:', url);
     console.log('FormData:', Array.from(formData.entries()));
