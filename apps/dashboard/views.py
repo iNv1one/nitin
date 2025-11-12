@@ -147,7 +147,13 @@ def create_keyword_group(request):
         notification_chat_id = request.POST.get('notification_chat_id', '').strip()
         
         if not name or not keywords:
-            messages.error(request, 'Название и ключевые слова обязательны для заполнения.')
+            error_msg = 'Название и ключевые слова обязательны для заполнения.'
+            
+            # AJAX запрос
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': error_msg})
+            
+            messages.error(request, error_msg)
             return render(request, 'dashboard/create_keyword_group.html')
         
         # Проверяем лимиты подписки
@@ -155,7 +161,13 @@ def create_keyword_group(request):
         max_groups = request.user.get_keyword_groups_limit()
         
         if current_groups >= max_groups:
-            messages.error(request, f'Достигнут лимит групп ключевых слов для вашего тарифа ({max_groups}).')
+            error_msg = f'Достигнут лимит групп ключевых слов для вашего тарифа ({max_groups}).'
+            
+            # AJAX запрос
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': error_msg})
+            
+            messages.error(request, error_msg)
             return redirect('dashboard:keyword_groups')
         
         # Парсим ключевые слова (разделенные запятыми или переносами строк)
@@ -172,7 +184,13 @@ def create_keyword_group(request):
             notification_chat_id=int(notification_chat_id) if notification_chat_id else None
         )
         
-        messages.success(request, f'Группа ключевых слов "{name}" успешно создана.')
+        success_msg = f'Группа ключевых слов "{name}" успешно создана.'
+        
+        # AJAX запрос
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': success_msg})
+        
+        messages.success(request, success_msg)
         return redirect('dashboard:keyword_groups')
     
     return render(request, 'dashboard/create_keyword_group.html')

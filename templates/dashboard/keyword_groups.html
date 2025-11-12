@@ -76,20 +76,25 @@
     }
     
     /* Стили для offcanvas формы */
-    #editGroupOffcanvas .toggle-switch {
+    #editGroupOffcanvas .toggle-switch,
+    #createGroupOffcanvas .toggle-switch {
         position: relative;
         display: inline-block;
         width: 50px;
         height: 24px;
     }
 
-    #editGroupOffcanvas .toggle-switch input {
+    #editGroupOffcanvas .toggle-switch input,
+    #createGroupOffcanvas .toggle-switch input {
         opacity: 0;
         width: 0;
         height: 0;
     }
 
-    #editGroupOffcanvas .slider {
+    #editGroupOffcanvas .slider,
+    #createGroupOffcanvas .slider,
+    #editGroupOffcanvas .toggle-slider,
+    #createGroupOffcanvas .toggle-slider {
         position: absolute;
         cursor: pointer;
         top: 0;
@@ -101,7 +106,10 @@
         border-radius: 24px;
     }
 
-    #editGroupOffcanvas .slider:before {
+    #editGroupOffcanvas .slider:before,
+    #createGroupOffcanvas .slider:before,
+    #editGroupOffcanvas .toggle-slider:before,
+    #createGroupOffcanvas .toggle-slider:before {
         position: absolute;
         content: "";
         height: 18px;
@@ -113,15 +121,24 @@
         border-radius: 50%;
     }
 
-    #editGroupOffcanvas input:checked + .slider {
+    #editGroupOffcanvas input:checked + .slider,
+    #createGroupOffcanvas input:checked + .slider,
+    #editGroupOffcanvas input:checked + .toggle-slider,
+    #createGroupOffcanvas input:checked + .toggle-slider {
         background-color: #28a745;
     }
 
-    #editGroupOffcanvas input:checked + .slider:before {
+    #editGroupOffcanvas input:checked + .slider:before,
+    #createGroupOffcanvas input:checked + .slider:before,
+    #editGroupOffcanvas input:checked + .toggle-slider:before,
+    #createGroupOffcanvas input:checked + .toggle-slider:before {
         transform: translateX(26px);
     }
 
-    #editGroupOffcanvas input:disabled + .slider {
+    #editGroupOffcanvas input:disabled + .slider,
+    #createGroupOffcanvas input:disabled + .slider,
+    #editGroupOffcanvas input:disabled + .toggle-slider,
+    #createGroupOffcanvas input:disabled + .toggle-slider {
         cursor: not-allowed;
         opacity: 0.6;
     }
@@ -134,9 +151,9 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
             <h2>Группы ключевых слов</h2>
-            <a href="{% url 'dashboard:create_keyword_group' %}" class="btn btn-dark-custom">
+            <button class="btn btn-dark-custom" onclick="openCreatePanel()">
                 <i class="fas fa-plus"></i> Добавить группу
-            </a>
+            </button>
         </div>
     </div>
 </div>
@@ -234,6 +251,23 @@
                 У вас пока нет групп ключевых слов. Создайте первую группу!
             </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- Offcanvas для создания группы -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="createGroupOffcanvas" style="width: 600px;">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="createGroupOffcanvasLabel">Создать группу</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="createGroupContent">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -344,5 +378,98 @@ function submitEditForm(form, groupId) {
         alert('Ошибка при сохранении');
     });
 }
+
+// Функции для создания группы
+function openCreatePanel() {
+    // Открываем offcanvas
+    const offcanvasEl = document.getElementById('createGroupOffcanvas');
+    const offcanvas = new bootstrap.Offcanvas(offcanvasEl);
+    offcanvas.show();
+    
+    // Загружаем содержимое через AJAX
+    const url = '/keywords/create/';
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            // Создаем временный div для парсинга HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Извлекаем содержимое формы
+            const content = doc.querySelector('.card-body') || doc.querySelector('form');
+            
+            if (content) {
+                document.getElementById('createGroupContent').innerHTML = content.outerHTML;
+                
+                // Переопределяем submit формы для AJAX
+                const form = document.querySelector('#createGroupContent form');
+                if (form) {
+                    form.onsubmit = function(e) {
+                        e.preventDefault();
+                        submitCreateForm(form);
+                    };
+                }
+                
+                // Инициализируем функционал AI фильтра
+                const aiFilterCheckbox = document.getElementById('use_ai_filter');
+                const aiPromptContainer = document.getElementById('ai_prompt_container');
+                
+                if (aiFilterCheckbox && aiPromptContainer) {
+                    aiFilterCheckbox.addEventListener('change', function() {
+                        if (this.checked) {
+                            aiPromptContainer.style.display = 'block';
+                        } else {
+                            aiPromptContainer.style.display = 'none';
+                        }
+                    });
+                }
+            } else {
+                document.getElementById('createGroupContent').innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading form:', error);
+            document.getElementById('createGroupContent').innerHTML = 
+                '<div class="alert alert-danger">Ошибка загрузки формы</div>';
+        });
+}
+
+function submitCreateForm(form) {
+    const formData = new FormData(form);
+    const url = form.action || '/keywords/create/';
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем offcanvas
+            const offcanvasEl = document.getElementById('createGroupOffcanvas');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            offcanvas.hide();
+            
+            // Перезагружаем страницу для отображения изменений
+            location.reload();
+        } else {
+            // Показываем ошибки в форме
+            if (data.errors) {
+                alert('Ошибка: ' + JSON.stringify(data.errors));
+            } else if (data.message) {
+                alert(data.message);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting form:', error);
+        alert('Ошибка при создании');
+    });
+}
 </script>
 {% endblock %}
+
