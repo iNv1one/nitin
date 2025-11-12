@@ -74,10 +74,15 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
             <h2>Чаты</h2>
-            <div>
-                <span class="badge bg-secondary">Всего: {{ total_chats }}</span>
-                <span class="badge bg-success">Включено: {{ enabled_count }}</span>
-                <span class="badge bg-danger">Выключено: {{ disabled_count }}</span>
+            <div class="d-flex gap-2 align-items-center">
+                <div>
+                    <span class="badge bg-secondary">Всего: {{ total_chats }}</span>
+                    <span class="badge bg-success">Включено: {{ enabled_count }}</span>
+                    <span class="badge bg-danger">Выключено: {{ disabled_count }}</span>
+                </div>
+                <a href="{% url 'dashboard:add_monitored_chat' %}" class="btn btn-dark-custom">
+                    <i class="fas fa-plus"></i> Добавить чат
+                </a>
             </div>
         </div>
     </div>
