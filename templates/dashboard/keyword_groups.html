@@ -486,7 +486,7 @@ function openCreatePanel() {
 
 function submitCreateForm(form) {
     const formData = new FormData(form);
-    const url = form.action || '/keywords/create/';
+    const url = form.action || '{% url "dashboard:create_keyword_group" %}';
     
     fetch(url, {
         method: 'POST',
@@ -495,7 +495,14 @@ function submitCreateForm(form) {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        // Проверяем, что ответ действительно JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new TypeError("Сервер вернул не JSON ответ. Возможно вы не авторизованы.");
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Закрываем offcanvas
@@ -517,7 +524,7 @@ function submitCreateForm(form) {
     })
     .catch(error => {
         console.error('Error submitting form:', error);
-        alert('Ошибка при создании');
+        alert('Ошибка при создании: ' + error.message);
     });
 }
 
