@@ -126,7 +126,7 @@
                     </a>
                     <a class="nav-link {% if 'sent_messages' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:sent_messages' %}">
-                        <i class="fas fa-paper-plane"></i> Исходящие
+                        <i class="fas fa-paper-plane"></i> Диалоги
                     </a>
                     <a class="nav-link {% if 'template' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:message_templates' %}">
