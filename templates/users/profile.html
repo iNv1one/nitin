@@ -45,24 +45,6 @@
                 </form>
             </div>
         </div>
-        
-        <div class="card mt-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Статистика</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Тариф:</strong> {{ user.get_subscription_plan_display }}</p>
-                        <p><strong>Дата регистрации:</strong> {{ user.created_at|date:"d.m.Y" }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Обработано сообщений:</strong> {{ user.messages_this_month }}</p>
-                        <p><strong>Лимит:</strong> {{ user.get_message_limit }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 {% endblock %}
