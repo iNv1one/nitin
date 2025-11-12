@@ -1602,3 +1602,120 @@ def authorize_sender_account(request, account_id):
         'account': account
     })
 
+
+@login_required
+def create_message_template(request):
+    """Создание шаблона сообщения"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        subject = request.POST.get('subject', '')
+        template_text = request.POST.get('template_text')
+        is_default = request.POST.get('is_default') == 'on'
+
+        # Проверка AJAX запроса
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        if not name or not template_text:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'errors': 'Заполните обязательные поля'
+                })
+            messages.error(request, 'Заполните обязательные поля')
+            return redirect('dashboard:keyword_groups')
+
+        template = MessageTemplate.objects.create(
+            user=request.user,
+            name=name,
+            subject=subject,
+            template_text=template_text,
+            is_default=is_default
+        )
+
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'template_id': template.id,
+                'message': f'Шаблон "{name}" создан'
+            })
+
+        messages.success(request, f'Шаблон "{name}" создан')
+        return redirect('dashboard:keyword_groups')
+
+    return redirect('dashboard:keyword_groups')
+
+
+@login_required
+def edit_message_template(request, template_id):
+    """Редактирование шаблона"""
+    template = get_object_or_404(MessageTemplate, id=template_id, user=request.user)
+
+    if request.method == 'POST':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        template.name = request.POST.get('name')
+        template.subject = request.POST.get('subject', '')
+        template.template_text = request.POST.get('template_text')
+        template.is_default = request.POST.get('is_default') == 'on'
+        template.save()
+
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'template_id': template.id,
+                'message': f'Шаблон "{template.name}" обновлен'
+            })
+
+        messages.success(request, f'Шаблон "{template.name}" обновлен')
+        return redirect('dashboard:keyword_groups')
+
+    # GET запрос для получения данных шаблона
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        return JsonResponse({
+            'success': True,
+            'id': template.id,
+            'name': template.name,
+            'subject': template.subject,
+            'template_text': template.template_text,
+            'is_default': template.is_default
+        })
+
+    return redirect('dashboard:keyword_groups')
+
+
+@login_required
+@require_http_methods(['POST'])
+def delete_message_template(request, template_id):
+    """Удаление шаблона"""
+    template = get_object_or_404(MessageTemplate, id=template_id, user=request.user)
+    name = template.name
+    template.delete()
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    if is_ajax:
+        return JsonResponse({
+            'success': True,
+            'message': f'Шаблон "{name}" удален'
+        })
+
+    messages.success(request, f'Шаблон "{name}" удален')
+    return redirect('dashboard:keyword_groups')
+
+
+@login_required
+@require_http_methods(['GET'])
+def get_message_template(request, template_id):
+    """Получение текста шаблона (AJAX)"""
+    template = get_object_or_404(MessageTemplate, id=template_id, user=request.user)
+
+    return JsonResponse({
+        'success': True,
+        'id': template.id,
+        'name': template.name,
+        'subject': template.subject,
+        'template_text': template.template_text,
+        'is_default': template.is_default
+    })
+

@@ -60,6 +60,12 @@ urlpatterns = [
     path('sender-accounts/verify/', views.verify_sender_code, name='verify_sender_code'),
     path('sender-accounts/disconnect/', views.disconnect_sender_account, name='disconnect_sender_account'),
     
+    # Шаблоны сообщений (используются на странице keyword_groups)
+    path('templates/create/', views.create_message_template, name='create_message_template'),
+    path('templates/<int:template_id>/edit/', views.edit_message_template, name='edit_message_template'),
+    path('templates/<int:template_id>/delete/', views.delete_message_template, name='delete_message_template'),
+    path('templates/<int:template_id>/get/', views.get_message_template, name='get_message_template'),
+    
     # API endpoints
     path('api/status/', views.api_status, name='api_status'),
 ]
