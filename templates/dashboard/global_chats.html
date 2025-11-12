@@ -385,7 +385,7 @@ function openAddChatPanel() {
 
 function submitAddChatForm(form) {
     const formData = new FormData(form);
-    const url = form.action || '/chats/add/';
+    const url = '{% url "dashboard:add_monitored_chat" %}';
     
     fetch(url, {
         method: 'POST',
@@ -394,7 +394,16 @@ function submitAddChatForm(form) {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return response.text().then(text => {
+                console.error('Server response (not JSON):', text.substring(0, 500));
+                throw new TypeError("Сервер вернул не JSON ответ. Проверьте консоль для деталей.");
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Закрываем offcanvas
@@ -417,7 +426,7 @@ function submitAddChatForm(form) {
     })
     .catch(error => {
         console.error('Error submitting form:', error);
-        alert('Ошибка при отправке заявки');
+        alert('Ошибка при отправке заявки: ' + error.message);
     });
 }
 </script>
