@@ -1458,9 +1458,17 @@ def create_message_template(request):
         template_text = request.POST.get('template_text')
         is_default = request.POST.get('is_default') == 'on'
         
+        # Проверка AJAX запроса
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if not name or not template_text:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'errors': 'Заполните обязательные поля'
+                })
             messages.error(request, 'Заполните обязательные поля')
-            return redirect('dashboard:message_templates')
+            return redirect('dashboard:keyword_groups')
         
         template = MessageTemplate.objects.create(
             user=request.user,
@@ -1470,8 +1478,15 @@ def create_message_template(request):
             is_default=is_default
         )
         
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'template_id': template.id,
+                'message': f'Шаблон "{name}" создан'
+            })
+        
         messages.success(request, f'Шаблон "{name}" создан')
-        return redirect('dashboard:message_templates')
+        return redirect('dashboard:keyword_groups')
     
     return render(request, 'dashboard/create_message_template.html')
 

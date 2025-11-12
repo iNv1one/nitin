@@ -246,9 +246,9 @@
                 <h3>Шаблоны сообщений</h3>
                 <p class="text-muted">Создавайте шаблоны для быстрой отправки сообщений лидам</p>
             </div>
-            <a href="{% url 'dashboard:create_message_template' %}" class="btn btn-dark-custom">
+            <button onclick="openCreateTemplatePanel()" class="btn btn-dark-custom">
                 <i class="fas fa-plus"></i> Создать шаблон
-            </a>
+            </button>
         </div>
     </div>
 </div>
@@ -566,7 +566,130 @@ function deleteGroup(groupId, groupName) {
         });
     }
 }
+
+// Функция открытия панели создания шаблона
+function openCreateTemplatePanel() {
+    const offcanvas = new bootstrap.Offcanvas(document.getElementById('createTemplateOffcanvas'));
+    const content = document.getElementById('createTemplateContent');
+    
+    // Показываем спиннер
+    content.innerHTML = `
+        <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+    `;
+    
+    offcanvas.show();
+    
+    // Загружаем форму
+    fetch('{% url "dashboard:create_message_template" %}')
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const form = doc.querySelector('form');
+            
+            if (form) {
+                content.innerHTML = form.outerHTML;
+            } else {
+                content.innerHTML = '<div class="alert alert-danger">Ошибка загрузки формы</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading template form:', error);
+            content.innerHTML = '<div class="alert alert-danger">Ошибка загрузки формы</div>';
+        });
+}
+
+// Обработка отправки формы создания шаблона
+document.addEventListener('submit', function(e) {
+    if (e.target.closest('#createTemplateContent form')) {
+        e.preventDefault();
+        submitCreateTemplateForm();
+    }
+});
+
+function submitCreateTemplateForm() {
+    const form = document.querySelector('#createTemplateContent form');
+    const formData = new FormData(form);
+    
+    fetch('{% url "dashboard:create_message_template" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем offcanvas
+            const offcanvasEl = document.getElementById('createTemplateOffcanvas');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            offcanvas.hide();
+            
+            // Показываем toast уведомление
+            showToast('Шаблон успешно создан');
+            
+            // Перезагружаем страницу
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            // Показываем ошибки
+            alert(data.errors || 'Ошибка при создании шаблона');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating template:', error);
+        alert('Ошибка при создании шаблона');
+    });
+}
+
+function showToast(message) {
+    // Создаем toast элемент если его нет
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    const toastEl = document.createElement('div');
+    toastEl.className = 'toast';
+    toastEl.setAttribute('role', 'alert');
+    toastEl.innerHTML = `
+        <div class="toast-header bg-success text-white">
+            <strong class="me-auto">Успешно</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+            ${message}
+        </div>
+    `;
+    
+    toastContainer.appendChild(toastEl);
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+    
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
+}
 </script>
+
+<!-- Offcanvas для создания шаблона -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="createTemplateOffcanvas" style="width: 600px;">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title">Создать шаблон</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body" id="createTemplateContent">
+        <!-- Содержимое загружается через AJAX -->
+    </div>
+</div>
 {% endblock %}
+
+
 
 
