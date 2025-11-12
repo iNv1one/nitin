@@ -238,6 +238,83 @@
     </div>
 </div>
 
+<!-- Секция шаблонов сообщений -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3>Шаблоны сообщений</h3>
+                <p class="text-muted">Создавайте шаблоны для быстрой отправки сообщений лидам</p>
+            </div>
+            <a href="{% url 'dashboard:create_message_template' %}" class="btn btn-dark-custom">
+                <i class="fas fa-plus"></i> Создать шаблон
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% if templates %}
+    {% for template in templates %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 {% if template.is_default %}border-primary{% endif %}">
+            <div class="card-header {% if template.is_default %}bg-primary text-white{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        {{ template.name }}
+                        {% if template.is_default %}
+                        <span class="badge bg-warning text-dark ms-2">По умолчанию</span>
+                        {% endif %}
+                    </h5>
+                    <div class="btn-group">
+                        <a href="{% url 'dashboard:edit_message_template' template.id %}" 
+                           class="btn btn-sm {% if template.is_default %}btn-light{% else %}btn-outline-primary{% endif %}" 
+                           title="Редактировать">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form method="post" action="{% url 'dashboard:delete_message_template' template.id %}" 
+                              class="d-inline"
+                              onsubmit="return confirm('Вы уверены, что хотите удалить шаблон \'{{ template.name }}\'?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-muted small">{{ template.text|truncatewords:30 }}</p>
+                
+                {% if template.variables %}
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-tags"></i> Переменные: 
+                        {% for var in template.variables %}
+                        <span class="badge bg-secondary">{{ var }}</span>
+                        {% endfor %}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-transparent">
+                <small class="text-muted">
+                    <i class="fas fa-clock"></i> Создан: {{ template.created_at|date:"d.m.Y H:i" }}
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            У вас пока нет шаблонов сообщений. Создайте первый шаблон для быстрой отправки сообщений!
+        </div>
+    </div>
+    {% endif %}
+</div>
+
 <!-- Offcanvas для создания группы -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="createGroupOffcanvas" style="width: 600px;">
     <div class="offcanvas-header">

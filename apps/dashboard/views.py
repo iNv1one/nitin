@@ -119,13 +119,18 @@ def keyword_groups(request):
     user = request.user
     groups = KeywordGroup.objects.filter(user=user).order_by('-created_at')
     
-    # Пагинация
+    # Пагинация для групп
     paginator = Paginator(groups, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # Получаем шаблоны сообщений пользователя
+    from apps.telegram_parser.models import MessageTemplate
+    templates = MessageTemplate.objects.filter(user=user).order_by('-is_default', 'name')
+    
     context = {
         'page_obj': page_obj,
+        'templates': templates,
         'user': user,
     }
     
