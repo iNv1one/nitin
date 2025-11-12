@@ -1217,13 +1217,16 @@ def send_message_to_lead(request, message_id):
 @login_required
 def sender_accounts(request):
     """Управление sender-аккаунтами"""
+    from apps.telegram_parser.models import SenderAccount
+    
     user = request.user
     
-    # Информация о подключенных аккаунтах
+    # Получаем все sender-аккаунты пользователя
+    accounts = SenderAccount.objects.filter(user=user).order_by('-created_at')
+    
     context = {
         'user': user,
-        'has_sender_account': user.has_sender_account,
-        'sender_phone': user.sender_phone,
+        'sender_accounts': accounts,
     }
     
     return render(request, 'dashboard/sender_accounts.html', context)
@@ -1553,5 +1556,143 @@ def get_message_template(request, template_id):
         'success': True,
         'name': template.name,
         'text': template.template_text
+    })
+
+
+@login_required
+@require_http_methods(['POST'])
+def create_sender_account(request):
+    """Создание нового sender-аккаунта"""
+    from apps.telegram_parser.models import SenderAccount
+    
+    try:
+        name = request.POST.get('name', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        api_id = request.POST.get('api_id', '').strip()
+        api_hash = request.POST.get('api_hash', '').strip()
+        is_active = request.POST.get('is_active') == 'on'
+        
+        if not all([name, phone, api_id, api_hash]):
+            return JsonResponse({
+                'success': False,
+                'error': 'Заполните все обязательные поля'
+            }, status=400)
+        
+        # Проверяем, нет ли уже аккаунта с таким телефоном у этого пользователя
+        if SenderAccount.objects.filter(user=request.user, phone=phone).exists():
+            return JsonResponse({
+                'success': False,
+                'error': 'Аккаунт с таким номером уже добавлен'
+            }, status=400)
+        
+        # Создаем новый аккаунт
+        account = SenderAccount.objects.create(
+            user=request.user,
+            name=name,
+            phone=phone,
+            api_id=int(api_id),
+            api_hash=api_hash,
+            is_active=is_active
+        )
+        
+        logger.info(f"Created sender account {account.id} for user {request.user.id}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Аккаунт успешно добавлен. Теперь нужно пройти авторизацию.',
+            'account_id': account.id
+        })
+        
+    except Exception as e:
+        logger.error(f"Error creating sender account: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(['POST'])
+def update_sender_account(request, account_id):
+    """Обновление sender-аккаунта"""
+    from apps.telegram_parser.models import SenderAccount
+    
+    try:
+        account = get_object_or_404(SenderAccount, id=account_id, user=request.user)
+        
+        name = request.POST.get('name', '').strip()
+        api_id = request.POST.get('api_id', '').strip()
+        api_hash = request.POST.get('api_hash', '').strip()
+        is_active = request.POST.get('is_active') == 'on'
+        
+        if not all([name, api_id, api_hash]):
+            return JsonResponse({
+                'success': False,
+                'error': 'Заполните все обязательные поля'
+            }, status=400)
+        
+        # Обновляем данные
+        account.name = name
+        account.api_id = int(api_id)
+        account.api_hash = api_hash
+        account.is_active = is_active
+        account.save()
+        
+        logger.info(f"Updated sender account {account.id} for user {request.user.id}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Аккаунт успешно обновлен'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating sender account: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(['POST'])
+def delete_sender_account(request, account_id):
+    """Удаление sender-аккаунта"""
+    from apps.telegram_parser.models import SenderAccount
+    
+    try:
+        account = get_object_or_404(SenderAccount, id=account_id, user=request.user)
+        account_name = account.name
+        account.delete()
+        
+        logger.info(f"Deleted sender account {account_id} ({account_name}) for user {request.user.id}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Аккаунт "{account_name}" успешно удален'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting sender account: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def authorize_sender_account(request, account_id):
+    """Страница авторизации конкретного sender-аккаунта"""
+    from apps.telegram_parser.models import SenderAccount
+    
+    account = get_object_or_404(SenderAccount, id=account_id, user=request.user)
+    
+    if account.is_connected:
+        messages.info(request, f'Аккаунт "{account.name}" уже подключен')
+        return redirect('dashboard:sender_accounts')
+    
+    # TODO: Реализовать логику авторизации через Telegram
+    # Пока просто показываем заглушку
+    return render(request, 'dashboard/sender_account_authorize.html', {
+        'account': account
     })
 

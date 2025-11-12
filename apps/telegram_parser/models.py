@@ -862,3 +862,80 @@ class SentMessageHistory(models.Model):
                 days = delta.days
                 return f"{days} дн"
         return None
+
+
+class SenderAccount(models.Model):
+    """Аккаунты для отправки сообщений лидам"""
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='sender_accounts',
+        verbose_name="Пользователь"
+    )
+    name = models.CharField(
+        max_length=100,
+        verbose_name="Название аккаунта",
+        help_text="Например: Рабочий аккаунт, Резервный и т.д."
+    )
+    phone = models.CharField(
+        max_length=20,
+        verbose_name="Номер телефона",
+        help_text="Номер в международном формате"
+    )
+    api_id = models.IntegerField(
+        verbose_name="API ID",
+        help_text="API ID от my.telegram.org"
+    )
+    api_hash = models.CharField(
+        max_length=255,
+        verbose_name="API Hash",
+        help_text="API Hash от my.telegram.org"
+    )
+    session_string = models.TextField(
+        blank=True,
+        verbose_name="Session String",
+        help_text="Строка сессии Telegram"
+    )
+    phone_code_hash = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Phone Code Hash",
+        help_text="Временный хеш для авторизации"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активен",
+        help_text="Использовать этот аккаунт для отправки"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата добавления"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата обновления"
+    )
+    
+    class Meta:
+        verbose_name = "Sender-аккаунт"
+        verbose_name_plural = "Sender-аккаунты"
+        ordering = ['-created_at']
+        unique_together = [['user', 'phone']]
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+        ]
+    
+    def __str__(self):
+        status = "✅" if self.is_active else "❌"
+        return f"{status} {self.name} ({self.phone})"
+    
+    @property
+    def is_connected(self):
+        """Проверяет, подключен ли аккаунт (есть ли session_string)"""
+        return bool(self.session_string)
+    
+    def toggle_active(self):
+        """Переключить статус активности"""
+        self.is_active = not self.is_active
+        self.save()

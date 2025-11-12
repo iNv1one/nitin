@@ -48,8 +48,13 @@ urlpatterns = [
     path('statistics/groups/', views.statistics_groups_ajax, name='statistics_groups_ajax'),
     path('statistics/chats/', views.statistics_chats_ajax, name='statistics_chats_ajax'),
     
-    # Sender-аккаунты
+    # Sender-аккаунты (новая модель)
     path('sender-accounts/', views.sender_accounts, name='sender_accounts'),
+    path('sender-accounts/create/', views.create_sender_account, name='create_sender_account'),
+    path('sender-accounts/<int:account_id>/update/', views.update_sender_account, name='update_sender_account'),
+    path('sender-accounts/<int:account_id>/delete/', views.delete_sender_account, name='delete_sender_account'),
+    path('sender-accounts/<int:account_id>/authorize/', views.authorize_sender_account, name='authorize_sender_account'),
+    # Старые endpoints (оставляем для обратной совместимости)
     path('sender-accounts/setup/', views.setup_sender_account, name='setup_sender_account'),
     path('sender-accounts/auth/', views.sender_account_auth, name='sender_account_auth'),
     path('sender-accounts/verify/', views.verify_sender_code, name='verify_sender_code'),

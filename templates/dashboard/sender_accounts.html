@@ -5,136 +5,309 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
-        <h2>Управление Sender-аккаунтами</h2>
-        <p class="text-muted">Настройка аккаунтов для отправки сообщений лидам</p>
+        <h2>Sender-аккаунты</h2>
     </div>
 </div>
 
-    {% if messages %}
-    <div class="row mb-3">
-        <div class="col-12">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
+{% if messages %}
+<div class="row mb-3">
+    <div class="col-12">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+        {% endfor %}
     </div>
-    {% endif %}
+</div>
+{% endif %}
 
-    <div class="row">
-        <div class="col-md-8">
-            <!-- Статус подключения -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Статус подключения</h5>
-                </div>
-                <div class="card-body">
-                    {% if has_sender_account %}
-                    <div class="alert alert-success">
-                        <h5><i class="fas fa-check-circle"></i> Sender-аккаунт подключен</h5>
-                        <p class="mb-2"><strong>Телефон:</strong> {{ sender_phone }}</p>
-                        <p class="mb-0">Вы можете отправлять сообщения лидам с помощью кнопки "Написать" на странице Сообщения.</p>
-                    </div>
-                    
-                    <form method="post" action="{% url 'dashboard:disconnect_sender_account' %}" 
-                          onsubmit="return confirm('Вы уверены, что хотите отключить sender-аккаунт?')">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-unlink"></i> Отключить аккаунт
-                        </button>
-                    </form>
-                    {% else %}
-                    <div class="alert alert-warning">
-                        <h5><i class="fas fa-exclamation-triangle"></i> Sender-аккаунт не подключен</h5>
-                        <p class="mb-0">Подключите Telegram аккаунт для автоматической отправки сообщений лидам</p>
-                    </div>
-                    {% endif %}
+<!-- Таблица sender-аккаунтов -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header" style="background-color: #d7dde3; border-bottom: 2px solid #d7dde3;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Список аккаунтов</h5>
+                    <button class="btn btn-dark btn-sm" data-bs-toggle="offcanvas" data-bs-target="#addAccountOffcanvas">
+                        <i class="fas fa-plus"></i> Добавить аккаунт
+                    </button>
                 </div>
             </div>
-
-            <!-- Форма подключения -->
-            {% if not has_sender_account %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-plug"></i> Подключить Sender-аккаунт</h5>
+            <div class="card-body p-0">
+                {% if sender_accounts %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead style="background-color: #d7dde3;">
+                            <tr>
+                                <th>Название</th>
+                                <th>Телефон</th>
+                                <th>Статус</th>
+                                <th>Дата добавления</th>
+                                <th class="text-end">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for account in sender_accounts %}
+                            <tr>
+                                <td>{{ account.name }}</td>
+                                <td>{{ account.phone }}</td>
+                                <td>
+                                    {% if account.is_connected %}
+                                        <span class="badge bg-success">Подключен</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Ожидает подключения</span>
+                                    {% endif %}
+                                    {% if account.is_active %}
+                                        <span class="badge bg-primary">Активен</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ account.created_at|date:"d.m.Y H:i" }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="editAccount({{ account.id }}, '{{ account.name }}', '{{ account.phone }}', {{ account.api_id }}, '{{ account.api_hash }}', {{ account.is_active|lower }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteAccount({{ account.id }}, '{{ account.name }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% if not account.is_connected %}
+                                    <a href="{% url 'dashboard:authorize_sender_account' account.id %}" 
+                                       class="btn btn-sm btn-success">
+                                        <i class="fas fa-key"></i> Авторизовать
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-body">
-                    <form method="post" action="{% url 'dashboard:setup_sender_account' %}">
-                        {% csrf_token %}
-                        
-                        <div class="mb-3">
-                            <label for="api_id" class="form-label">API ID <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="api_id" name="api_id" required>
-                            <div class="form-text">Получите на <a href="https://my.telegram.org" target="_blank">my.telegram.org</a></div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="api_hash" class="form-label">API Hash <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="api_hash" name="api_hash" required>
-                            <div class="form-text">Получите на <a href="https://my.telegram.org" target="_blank">my.telegram.org</a></div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="phone" class="form-label">Номер телефона <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control" id="phone" name="phone" placeholder="+1234567890" required>
-                            <div class="form-text">Номер в международном формате (например, +79001234567)</div>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Сохранить и продолжить
-                        </button>
-                    </form>
+                {% else %}
+                <div class="p-5 text-center text-muted">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>У вас пока нет подключенных sender-аккаунтов</p>
+                    <button class="btn btn-dark" data-bs-toggle="offcanvas" data-bs-target="#addAccountOffcanvas">
+                        <i class="fas fa-plus"></i> Добавить первый аккаунт
+                    </button>
                 </div>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Информационная панель -->
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> Как это работает?</h5>
-                </div>
-                <div class="card-body">
-                    <h6>Зачем нужен Sender-аккаунт?</h6>
-                    <p>Это отдельный Telegram аккаунт, от имени которого будут отправляться сообщения лидам.</p>
-                    
-                    <h6 class="mt-3">Преимущества:</h6>
-                    <ul>
-                        <li>Автоматизация коммуникации</li>
-                        <li>Отправка от реального аккаунта (не бота)</li>
-                        <li>Использование шаблонов</li>
-                        <li>История отправленных сообщений</li>
-                    </ul>
-                    
-                    <h6 class="mt-3">Важно:</h6>
-                    <ul>
-                        <li><strong>Используйте РАЗНЫЕ</strong> аккаунты для парсинга и отправки</li>
-                        <li>Не отправляйте спам</li>
-                        <li>Соблюдайте лимиты Telegram</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-book"></i> Инструкция</h5>
-                </div>
-                <div class="card-body">
-                    <ol>
-                        <li>Создайте отдельный Telegram аккаунт</li>
-                        <li>Перейдите на <a href="https://my.telegram.org" target="_blank">my.telegram.org</a></li>
-                        <li>Войдите с новым аккаунтом</li>
-                        <li>Создайте приложение в "API development tools"</li>
-                        <li>Скопируйте API ID и API Hash</li>
-                        <li>Заполните форму слева</li>
-                        <li>Пройдите авторизацию через Telegram</li>
-                        <li>Готово!</li>
-                    </ol>
-                </div>
+                {% endif %}
             </div>
         </div>
     </div>
+</div>
+
+<!-- Offcanvas для добавления аккаунта -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="addAccountOffcanvas">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Добавить Sender-аккаунт</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="addAccountForm" method="post" action="{% url 'dashboard:create_sender_account' %}">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="add_name" class="form-label">Название аккаунта <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="add_name" name="name" required 
+                       placeholder="Например: Рабочий аккаунт">
+                <div class="form-text">Помогает различать аккаунты</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="add_phone" class="form-label">Номер телефона <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" id="add_phone" name="phone" required 
+                       placeholder="+79001234567">
+                <div class="form-text">В международном формате</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="add_api_id" class="form-label">API ID <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="add_api_id" name="api_id" required>
+                <div class="form-text">Получите на <a href="https://my.telegram.org" target="_blank">my.telegram.org</a></div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="add_api_hash" class="form-label">API Hash <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="add_api_hash" name="api_hash" required>
+                <div class="form-text">Получите на <a href="https://my.telegram.org" target="_blank">my.telegram.org</a></div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="add_is_active" name="is_active" checked>
+                    <label class="form-check-label" for="add_is_active">
+                        Активен (использовать для отправки)
+                    </label>
+                </div>
+            </div>
+            
+            <div class="alert alert-info">
+                <small>
+                    <strong>Важно:</strong> После добавления аккаунта нужно будет пройти авторизацию через Telegram.
+                </small>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-dark flex-grow-1">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">
+                    Отмена
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Offcanvas для редактирования аккаунта -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="editAccountOffcanvas">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Редактировать аккаунт</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="editAccountForm" method="post">
+            {% csrf_token %}
+            <input type="hidden" id="edit_account_id" name="account_id">
+            
+            <div class="mb-3">
+                <label for="edit_name" class="form-label">Название аккаунта <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="edit_name" name="name" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="edit_phone" class="form-label">Номер телефона <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" id="edit_phone" name="phone" required readonly>
+                <div class="form-text">Номер телефона нельзя изменить</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="edit_api_id" class="form-label">API ID <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="edit_api_id" name="api_id" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="edit_api_hash" class="form-label">API Hash <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="edit_api_hash" name="api_hash" required>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                    <label class="form-check-label" for="edit_is_active">
+                        Активен (использовать для отправки)
+                    </label>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-dark flex-grow-1">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">
+                    Отмена
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Добавление аккаунта через AJAX
+document.getElementById('addAccountForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Ошибка: ' + (data.error || 'Не удалось добавить аккаунт'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при добавлении аккаунта');
+    });
+});
+
+// Открытие формы редактирования
+function editAccount(id, name, phone, api_id, api_hash, is_active) {
+    document.getElementById('edit_account_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_phone').value = phone;
+    document.getElementById('edit_api_id').value = api_id;
+    document.getElementById('edit_api_hash').value = api_hash;
+    document.getElementById('edit_is_active').checked = is_active;
+    
+    document.getElementById('editAccountForm').action = `/sender-accounts/${id}/update/`;
+    
+    const offcanvas = new bootstrap.Offcanvas(document.getElementById('editAccountOffcanvas'));
+    offcanvas.show();
+}
+
+// Редактирование аккаунта через AJAX
+document.getElementById('editAccountForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Ошибка: ' + (data.error || 'Не удалось обновить аккаунт'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при обновлении аккаунта');
+    });
+});
+
+// Удаление аккаунта
+function deleteAccount(id, name) {
+    if (!confirm(`Вы уверены, что хотите удалить аккаунт "${name}"?`)) {
+        return;
+    }
+    
+    fetch(`/sender-accounts/${id}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Ошибка: ' + (data.error || 'Не удалось удалить аккаунт'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при удалении аккаунта');
+    });
+}
+</script>
 {% endblock %}
