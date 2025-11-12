@@ -15,24 +15,27 @@
         background-color: rgba(0,0,0,0.05);
     }
     
+    /* Убираем стрелки у неактивных столбцов */
     .sortable::after {
-        content: '⇅';
-        position: absolute;
-        right: 8px;
-        opacity: 0.3;
-        font-size: 14px;
+        content: '';
     }
     
     .sortable.asc::after {
         content: '▲';
-        opacity: 0.8;
-        color: #007bff;
+        position: absolute;
+        right: 8px;
+        opacity: 1;
+        color: #333;
+        font-size: 14px;
     }
     
     .sortable.desc::after {
         content: '▼';
-        opacity: 0.8;
-        color: #007bff;
+        position: absolute;
+        right: 8px;
+        opacity: 1;
+        color: #333;
+        font-size: 14px;
     }
     
     /* Кастомные кнопки периода */
