@@ -80,9 +80,9 @@
                     <span class="badge bg-success">Включено: {{ enabled_count }}</span>
                     <span class="badge bg-danger">Выключено: {{ disabled_count }}</span>
                 </div>
-                <a href="{% url 'dashboard:add_monitored_chat' %}" class="btn btn-dark-custom">
+                <button class="btn btn-dark-custom" onclick="openAddChatPanel()">
                     <i class="fas fa-plus"></i> Добавить чат
-                </a>
+                </button>
             </div>
         </div>
     </div>
@@ -342,5 +342,101 @@ function showToast(message, type) {
         toastElement.remove();
     });
 }
+
+// Функция для открытия offcanvas добавления чата
+function openAddChatPanel() {
+    const offcanvasEl = document.getElementById('addChatOffcanvas');
+    const offcanvas = new bootstrap.Offcanvas(offcanvasEl);
+    offcanvas.show();
+    
+    // Загружаем содержимое через AJAX
+    const url = '/chats/add/';
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Извлекаем содержимое формы
+            const content = doc.querySelector('.card-body') || doc.querySelector('form');
+            
+            if (content) {
+                document.getElementById('addChatContent').innerHTML = content.outerHTML;
+                
+                // Переопределяем submit формы для AJAX
+                const form = document.querySelector('#addChatContent form');
+                if (form) {
+                    form.onsubmit = function(e) {
+                        e.preventDefault();
+                        submitAddChatForm(form);
+                    };
+                }
+            } else {
+                document.getElementById('addChatContent').innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading form:', error);
+            document.getElementById('addChatContent').innerHTML = 
+                '<div class="alert alert-danger">Ошибка загрузки формы</div>';
+        });
+}
+
+function submitAddChatForm(form) {
+    const formData = new FormData(form);
+    const url = form.action || '/chats/add/';
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем offcanvas
+            const offcanvasEl = document.getElementById('addChatOffcanvas');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            offcanvas.hide();
+            
+            // Показываем сообщение
+            showToast(data.message, 'success');
+            
+            // Перезагружаем через 1 секунду
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            if (data.message) {
+                alert(data.message);
+            } else if (data.errors) {
+                alert('Ошибка: ' + JSON.stringify(data.errors));
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting form:', error);
+        alert('Ошибка при отправке заявки');
+    });
+}
 </script>
+
+<!-- Offcanvas для добавления чата -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="addChatOffcanvas" style="width: 600px;">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Добавить чат</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="addChatContent">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
+

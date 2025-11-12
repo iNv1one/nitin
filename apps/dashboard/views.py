@@ -306,7 +306,13 @@ def add_monitored_chat(request):
         chat_description = request.POST.get('chat_description', '').strip()
         
         if not chat_link:
-            messages.error(request, 'Ссылка на чат обязательна для заполнения.')
+            error_msg = 'Ссылка на чат обязательна для заполнения.'
+            
+            # AJAX запрос
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': error_msg})
+            
+            messages.error(request, error_msg)
             return render(request, 'dashboard/add_monitored_chat.html')
         
         # Импортируем ChatRequest
@@ -341,7 +347,13 @@ def add_monitored_chat(request):
         except Exception as e:
             print(f"Error sending notification to admin: {e}")
         
-        messages.success(request, 'Заявка на добавление чата отправлена! Мы обработаем её в ближайшее время.')
+        success_msg = 'Заявка на добавление чата отправлена! Мы обработаем её в ближайшее время.'
+        
+        # AJAX запрос
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': success_msg})
+        
+        messages.success(request, success_msg)
         return redirect('dashboard:monitored_chats')
     
     return render(request, 'dashboard/add_monitored_chat.html')
