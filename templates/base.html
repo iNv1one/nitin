@@ -106,18 +106,6 @@
                 </a>
             </div>
             
-            <!-- System Status -->
-            <div class="p-3 mb-3 bg-light rounded">
-                <h6 class="mb-2">Статус системы</h6>
-                <div id="system-status">
-                    <div class="d-flex align-items-center">
-                        <span class="status-indicator status-healthy" id="status-indicator"></span>
-                        <small id="status-text">Загрузка...</small>
-                    </div>
-                    <small class="text-muted" id="last-update">Проверка...</small>
-                </div>
-            </div>
-            
             <div class="sidebar-nav">
                 <nav class="nav flex-column">
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
@@ -162,6 +150,18 @@
                         <i class="fas fa-cog"></i> Настройки
                     </a>
                 </nav>
+                
+                <!-- System Status -->
+                <div class="p-3 mt-3 bg-light rounded">
+                    <h6 class="mb-2">Статус системы</h6>
+                    <div id="system-status">
+                        <div class="d-flex align-items-center">
+                            <span class="status-indicator status-healthy" id="status-indicator"></span>
+                            <small id="status-text">Загрузка...</small>
+                        </div>
+                        <small class="text-muted" id="last-update">Проверка...</small>
+                    </div>
+                </div>
             </div>
             
             <!-- User Profile Dropdown -->
@@ -172,7 +172,6 @@
                         <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
                         <div>
                             <div class="fw-bold text-dark">{{ user.get_full_name|default:user.username }}</div>
-                            <small class="text-muted">{{ user.email }}</small>
                         </div>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
