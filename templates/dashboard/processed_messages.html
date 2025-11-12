@@ -30,7 +30,7 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
-            <h2>Сообщения (CRM)</h2>
+            <h2>Сообщения</h2>
             <div>
                 <span class="badge bg-primary">Всего: {{ total_count }}</span>
                 <span class="badge bg-success">✓ Одобрено ИИ: {{ approved_count }}</span>
@@ -295,12 +295,12 @@
                     </select>
                     <div class="form-text">
                         {% if user.message_templates.count == 0 %}
-                        <a href="{% url 'dashboard:message_templates' %}" target="_blank">
-                            Создать первый шаблон
+                        <a href="{% url 'dashboard:keyword_groups' %}" target="_blank">
+                            Создать первую группу ключевых слов
                         </a>
                         {% else %}
-                        <a href="{% url 'dashboard:message_templates' %}" target="_blank">
-                            Управление шаблонами
+                        <a href="{% url 'dashboard:keyword_groups' %}" target="_blank">
+                            Управление ключевыми словами
                         </a>
                         {% endif %}
                     </div>

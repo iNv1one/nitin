@@ -112,14 +112,6 @@
                        href="{% url 'dashboard:dashboard' %}">
                         <i class="fas fa-home"></i> Главная
                     </a>
-                    <a class="nav-link {% if 'keyword' in request.resolver_match.url_name %}active{% endif %}" 
-                       href="{% url 'dashboard:keyword_groups' %}">
-                        <i class="fas fa-tags"></i> Ключевые слова
-                    </a>
-                    <a class="nav-link {% if 'global_chat' in request.resolver_match.url_name %}active{% endif %}" 
-                       href="{% url 'dashboard:global_chats' %}">
-                        <i class="fas fa-comments"></i> Чаты
-                    </a>
                     <a class="nav-link {% if 'message' in request.resolver_match.url_name and 'sent' not in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:processed_messages' %}">
                         <i class="fas fa-envelope"></i> Сообщения
@@ -127,6 +119,14 @@
                     <a class="nav-link {% if 'sent_messages' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:sent_messages' %}">
                         <i class="fas fa-paper-plane"></i> Диалоги
+                    </a>
+                    <a class="nav-link {% if 'keyword' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'dashboard:keyword_groups' %}">
+                        <i class="fas fa-tags"></i> Ключевые слова
+                    </a>
+                    <a class="nav-link {% if 'global_chat' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'dashboard:global_chats' %}">
+                        <i class="fas fa-comments"></i> Чаты
                     </a>
                     
                     {% if user.is_staff %}
