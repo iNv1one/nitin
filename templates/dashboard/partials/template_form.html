@@ -32,5 +32,10 @@
         <button type="submit" class="btn btn-dark">
             <i class="fas fa-save"></i> Сохранить
         </button>
+        {% if template %}
+        <button type="button" class="btn btn-danger" onclick="deleteTemplate({{ template.id }}, '{{ template.name }}')">
+            <i class="fas fa-trash"></i> Удалить
+        </button>
+        {% endif %}
     </div>
 </form>
