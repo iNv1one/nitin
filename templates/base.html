@@ -128,6 +128,10 @@
                        href="{% url 'dashboard:global_chats' %}">
                         <i class="fas fa-comments"></i> Чаты
                     </a>
+                    <a class="nav-link {% if 'raw_messages' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'dashboard:raw_messages' %}">
+                        <i class="fas fa-bug"></i> Сырые сообщения
+                    </a>
                     
                     {% if user.is_staff %}
                     <hr class="sidebar-divider">
@@ -139,10 +143,6 @@
                     <a class="nav-link {% if 'parser' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:parser_control' %}">
                         <i class="fas fa-robot"></i> Управление Парсером
-                    </a>
-                    <a class="nav-link {% if 'raw_messages' in request.resolver_match.url_name %}active{% endif %}" 
-                       href="{% url 'dashboard:raw_messages' %}">
-                        <i class="fas fa-bug"></i> Сырые сообщения
                     </a>
                     {% endif %}
                 </nav>
