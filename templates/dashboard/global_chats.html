@@ -142,6 +142,7 @@
                     <thead>
                         <tr>
                             <th style="padding-left: 20px;">Название чата</th>
+                            <th style="width: 200px;">Теги</th>
                             <th style="width: 150px;">ID чата</th>
                             <th style="width: 150px;">Ссылка</th>
                             <th style="width: 80px; text-align: center;">Вкл/Выкл</th>
@@ -152,6 +153,15 @@
                         <tr id="chat-row-{{ item.chat.id }}">
                             <td style="padding-left: 20px;">
                                 {{ item.chat.name }}
+                            </td>
+                            <td>
+                                {% if item.chat.tags.all %}
+                                    {% for tag in item.chat.tags.all %}
+                                        <span class="badge bg-{{ tag.color }}" style="margin-right: 3px;">{{ tag.name }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
                             </td>
                             <td>
                                 <code style="color: #212529;">{{ item.chat.chat_id }}</code>
@@ -178,7 +188,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">
+                            <td colspan="5" class="text-center text-muted py-4">
                                 {% if search_query %}
                                     <i class="fas fa-search"></i> По вашему запросу ничего не найдено
                                 {% else %}

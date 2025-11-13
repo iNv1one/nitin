@@ -735,8 +735,8 @@ def global_chats(request):
     """
     user = request.user
     
-    # Получаем все глобальные чаты
-    all_chats = GlobalChat.objects.filter(is_active=True).order_by('name')
+    # Получаем все глобальные чаты с prefetch тегов для оптимизации
+    all_chats = GlobalChat.objects.filter(is_active=True).prefetch_related('tags').order_by('name')
     
     # Получаем настройки пользователя для чатов
     user_settings = UserChatSettings.objects.filter(user=user).select_related('global_chat')

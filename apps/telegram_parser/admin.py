@@ -4,7 +4,8 @@ from django.urls import reverse
 from django.db.models import Count, Q
 from .models import (
     KeywordGroup, MonitoredChat, ProcessedMessage, BotStatus,
-    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate, RejectedMessage, SentMessageHistory
+    GlobalChat, UserChatSettings, ChatRequest, MessageTemplate, RejectedMessage, SentMessageHistory,
+    ChatTag
 )
 
 
@@ -335,29 +336,106 @@ class BotStatusAdmin(admin.ModelAdmin):
         return False
 
 
+@admin.register(ChatTag)
+class ChatTagAdmin(admin.ModelAdmin):
+    """Админка для тегов чатов"""
+    
+    list_display = ['name', 'color_badge', 'chats_count', 'created_at']
+    list_filter = ['color', 'created_at']
+    search_fields = ['name', 'description']
+    readonly_fields = ['created_at']
+    
+    fieldsets = (
+        ('Основное', {
+            'fields': ('name', 'color', 'description')
+        }),
+        ('Метаданные', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def color_badge(self, obj):
+        """Отображение цвета тега"""
+        color_map = {
+            'primary': '#0d6efd',
+            'secondary': '#6c757d',
+            'success': '#198754',
+            'danger': '#dc3545',
+            'warning': '#ffc107',
+            'info': '#0dcaf0',
+            'dark': '#212529',
+        }
+        bg_color = color_map.get(obj.color, '#0d6efd')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 3px;">{}</span>',
+            bg_color, obj.name
+        )
+    color_badge.short_description = 'Тег'
+    
+    def chats_count(self, obj):
+        """Количество чатов с этим тегом"""
+        count = obj.chats.count()
+        if count > 0:
+            url = reverse('admin:telegram_parser_globalchat_changelist')
+            return format_html(
+                '<a href="{}?tags__id__exact={}">{}</a>',
+                url, obj.id, count
+            )
+        return count
+    chats_count.short_description = 'Чатов'
+
+
 @admin.register(GlobalChat)
 class GlobalChatAdmin(admin.ModelAdmin):
     """Админка для глобальных чатов"""
     
     list_display = [
-        'chat_id', 'name', 'enabled_users', 'invite_link_display', 
+        'chat_id', 'name', 'tags_display', 'enabled_users', 'invite_link_display', 
         'is_active', 'created_at'
     ]
-    list_filter = ['is_active', 'created_at']
+    list_filter = ['is_active', 'tags', 'created_at']
     search_fields = ['name', 'chat_id']
     readonly_fields = ['created_at', 'updated_at']
+    filter_horizontal = ['tags']  # Удобный виджет для выбора тегов
     
     actions = ['restart_parser_after_changes', 'enable_for_all_users']
     
     fieldsets = (
         ('Информация о чате', {
-            'fields': ('chat_id', 'name', 'invite_link', 'is_active')
+            'fields': ('chat_id', 'name', 'invite_link', 'tags', 'is_active')
         }),
         ('Метаданные', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
+    
+    def tags_display(self, obj):
+        """Отображение тегов с цветами"""
+        tags = obj.tags.all()
+        if not tags:
+            return '-'
+        
+        color_map = {
+            'primary': '#0d6efd',
+            'secondary': '#6c757d',
+            'success': '#198754',
+            'danger': '#dc3545',
+            'warning': '#ffc107',
+            'info': '#0dcaf0',
+            'dark': '#212529',
+        }
+        
+        badges = []
+        for tag in tags:
+            bg_color = color_map.get(tag.color, '#0d6efd')
+            badges.append(format_html(
+                '<span style="background-color: {}; color: white; padding: 2px 8px; border-radius: 3px; margin-right: 3px; font-size: 11px;">{}</span>',
+                bg_color, tag.name
+            ))
+        return format_html(' '.join(str(badge) for badge in badges))
+    tags_display.short_description = 'Теги'
     
     @admin.action(description='👥 Включить чат для всех пользователей')
     def enable_for_all_users(self, request, queryset):

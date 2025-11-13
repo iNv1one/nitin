@@ -5,11 +5,60 @@ from django.utils import timezone
 import json
 
 
+class ChatTag(models.Model):
+    """Теги/группы для классификации чатов"""
+    
+    COLOR_CHOICES = [
+        ('primary', 'Синий'),
+        ('secondary', 'Серый'),
+        ('success', 'Зеленый'),
+        ('danger', 'Красный'),
+        ('warning', 'Желтый'),
+        ('info', 'Голубой'),
+        ('dark', 'Темный'),
+    ]
+    
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Название тега",
+        help_text="Например: Недвижимость, Активный, Удалить"
+    )
+    color = models.CharField(
+        max_length=20,
+        choices=COLOR_CHOICES,
+        default='primary',
+        verbose_name="Цвет тега",
+        help_text="Цвет отображения в интерфейсе"
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name="Описание",
+        help_text="Для чего используется этот тег"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создан")
+    
+    class Meta:
+        verbose_name = "Тег чата"
+        verbose_name_plural = "Теги чатов"
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
+
 class GlobalChat(models.Model):
     """Глобальные чаты, доступные всем пользователям"""
     chat_id = models.BigIntegerField(unique=True, verbose_name="ID чата Telegram")
     name = models.CharField(max_length=500, verbose_name="Название чата")
     invite_link = models.URLField(max_length=500, blank=True, null=True, verbose_name="Ссылка на чат")
+    tags = models.ManyToManyField(
+        ChatTag,
+        blank=True,
+        related_name='chats',
+        verbose_name="Теги",
+        help_text="Группы/категории чата"
+    )
     is_active = models.BooleanField(default=True, verbose_name="Чат активен")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Добавлен")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлен")
