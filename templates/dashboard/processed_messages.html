@@ -132,6 +132,13 @@
                             </h5>
                             <p class="card-text">{{ message.message_text|truncatewords:50 }}</p>
                             
+                            <!-- Группа ключевых слов -->
+                            {% if message.keyword_group %}
+                            <div class="mb-2">
+                                <strong>Группа ключевых слов:</strong> {{ message.keyword_group.name }}
+                            </div>
+                            {% endif %}
+                            
                             <!-- Ключевые слова -->
                             <div class="mb-2">
                                 <strong>Ключевые слова:</strong>
