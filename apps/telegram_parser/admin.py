@@ -188,10 +188,12 @@ class ProcessedMessageAdmin(admin.ModelAdmin):
     def status_flags(self, obj):
         """Флаги статуса"""
         flags = []
-        if obj.is_processed:
-            flags.append("📋 Обработано")
-        if obj.is_qualified:
+        if obj.quality_status == 'qualified':
             flags.append("⭐ Квалифицирован")
+        elif obj.quality_status == 'unqualified':
+            flags.append("❌ Неквал")
+        elif obj.quality_status == 'spam':
+            flags.append("🚫 Спам")
         if obj.dialog_started:
             flags.append("💬 Диалог")
         if obj.sale_made:
