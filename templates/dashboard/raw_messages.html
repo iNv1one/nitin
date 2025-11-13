@@ -4,34 +4,34 @@
 {% block title %}Сырые сообщения - Отладка{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2>Сырые сообщения парсера</h2>
-                <div>
-                    <span class="badge bg-primary">Всего: {{ total_count }}</span>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
-                        <i class="fas fa-sync-alt"></i> Обновить
-                    </button>
-                </div>
+<!-- Заголовок страницы -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Сырые сообщения парсера</h2>
+            <div>
+                <span class="badge bg-primary">Всего: {{ total_count }}</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> Обновить
+                </button>
             </div>
-            <p class="text-muted">Все сообщения, полученные парсером в реальном времени (независимо от ключевых слов)</p>
         </div>
+        <p class="text-muted">Все сообщения, полученные парсером в реальном времени (независимо от ключевых слов)</p>
     </div>
+</div>
 
-    <!-- Панель фильтров -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">
-                        <i class="fas fa-filter"></i> Фильтры
-                        <button class="btn btn-sm btn-link float-end" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel">
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                    </h5>
-                </div>
+<!-- Панель фильтров -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#filterPanel">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter"></i> Фильтры
+                    <button class="btn btn-sm btn-link float-end" type="button" style="color: #000; pointer-events: none;">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </h5>
+            </div>
                 <div class="collapse" id="filterPanel">
                     <div class="card-body">
                         <form method="get" action="">
@@ -222,7 +222,6 @@
         </div>
     </div>
     {% endif %}
-</div>
 
 <style>
     .message-text {
