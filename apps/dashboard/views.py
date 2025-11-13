@@ -1675,7 +1675,8 @@ def create_message_template(request):
         messages.success(request, f'Шаблон "{name}" создан')
         return redirect('dashboard:keyword_groups')
 
-    return redirect('dashboard:keyword_groups')
+    # GET запрос - возвращаем HTML форму
+    return render(request, 'dashboard/partials/template_form.html', {'template': None})
 
 
 @login_required
@@ -1702,19 +1703,8 @@ def edit_message_template(request, template_id):
         messages.success(request, f'Шаблон "{template.name}" обновлен')
         return redirect('dashboard:keyword_groups')
 
-    # GET запрос для получения данных шаблона
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    if is_ajax:
-        return JsonResponse({
-            'success': True,
-            'id': template.id,
-            'name': template.name,
-            'subject': template.subject,
-            'template_text': template.template_text,
-            'is_default': template.is_default
-        })
-
-    return redirect('dashboard:keyword_groups')
+    # GET запрос - возвращаем HTML форму с данными шаблона
+    return render(request, 'dashboard/partials/template_form.html', {'template': template})
 
 
 @login_required

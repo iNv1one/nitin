@@ -1,0 +1,36 @@
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="name" class="form-label">Название шаблона <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ template.name|default:'' }}" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="subject" class="form-label">Тема сообщения</label>
+        <input type="text" class="form-control" id="subject" name="subject" value="{{ template.subject|default:'' }}" placeholder="Опционально">
+    </div>
+    
+    <div class="mb-3">
+        <label for="template_text" class="form-label">Текст шаблона <span class="text-danger">*</span></label>
+        <textarea class="form-control" id="template_text" name="template_text" rows="10" required>{{ template.template_text|default:'' }}</textarea>
+        <div class="form-text">
+            Можно использовать переменные:<br>
+            <code>{username}</code> - имя отправителя<br>
+            <code>{message}</code> - текст сообщения<br>
+            <code>{keywords}</code> - найденные ключевые слова
+        </div>
+    </div>
+    
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="is_default" name="is_default" {% if template.is_default %}checked{% endif %}>
+        <label class="form-check-label" for="is_default">
+            Использовать по умолчанию
+        </label>
+    </div>
+    
+    <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-dark">
+            <i class="fas fa-save"></i> Сохранить
+        </button>
+    </div>
+</form>
