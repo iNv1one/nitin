@@ -112,7 +112,7 @@
                        href="{% url 'dashboard:dashboard' %}">
                         <i class="fas fa-home"></i> Главная
                     </a>
-                    <a class="nav-link {% if 'message' in request.resolver_match.url_name and 'sent' not in request.resolver_match.url_name %}active{% endif %}" 
+                    <a class="nav-link {% if request.resolver_match.url_name == 'processed_messages' %}active{% endif %}" 
                        href="{% url 'dashboard:processed_messages' %}">
                         <i class="fas fa-envelope"></i> Сообщения
                     </a>

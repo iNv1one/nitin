@@ -29,10 +29,10 @@
                         <label class="form-label">Статус</label>
                         <select name="status" class="form-select">
                             <option value="">Все</option>
-                            <option value="read" {% if status_filter == 'read' %}selected{% endif %}>👁 Прочитано</option>
-                            <option value="unread" {% if status_filter == 'unread' %}selected{% endif %}>⚪ Не прочитано</option>
-                            <option value="replied" {% if status_filter == 'replied' %}selected{% endif %}>💬 Ответил</option>
-                            <option value="not_replied" {% if status_filter == 'not_replied' %}selected{% endif %}>❌ Не ответил</option>
+                            <option value="read" {% if status_filter == 'read' %}selected{% endif %}>Прочитано</option>
+                            <option value="unread" {% if status_filter == 'unread' %}selected{% endif %}>Не прочитано</option>
+                            <option value="replied" {% if status_filter == 'replied' %}selected{% endif %}>Ответил</option>
+                            <option value="not_replied" {% if status_filter == 'not_replied' %}selected{% endif %}>Не ответил</option>
                         </select>
                     </div>
                     <div class="col-md-3">
