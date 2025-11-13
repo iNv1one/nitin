@@ -13,7 +13,7 @@
     
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #ffffff;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -34,10 +34,9 @@
             margin-bottom: 2rem;
         }
         
-        .login-header i {
-            font-size: 3rem;
-            color: #007bff;
-            margin-bottom: 1rem;
+        .login-header h2 {
+            color: #333;
+            margin-bottom: 0.5rem;
         }
         
         .btn-login {
@@ -55,15 +54,14 @@
         }
         
         .form-control:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            border-color: #333;
+            box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
     <div class="login-card">
         <div class="login-header">
-            <i class="fas fa-robot"></i>
             <h2>NITIN</h2>
             <p class="text-muted">Войдите в свой аккаунт</p>
         </div>
@@ -119,7 +117,7 @@
                 </div>
             {% endif %}
             
-            <button type="submit" class="btn btn-primary btn-login">
+            <button type="submit" class="btn btn-dark btn-login">
                 <i class="fas fa-sign-in-alt"></i> Войти
             </button>
             
