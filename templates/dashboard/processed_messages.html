@@ -125,7 +125,7 @@
                                 
                                 <!-- Статус ИИ -->
                                 {% if message.ai_approved %}
-                                <span class="badge bg-success ms-2"><i class="fas fa-robot"></i> Одобрено ИИ</span>
+                                <span class="badge bg-success ms-2">Одобрено ИИ</span>
                                 {% else %}
                                 <span class="badge ms-2" style="background-color: #d7dde3; color: #000;">Отклонено ИИ</span>
                                 {% endif %}
@@ -143,16 +143,6 @@
                                 <span class="text-muted">нет</span>
                                 {% endif %}
                             </div>
-                            
-                            <!-- Результат ИИ (только для одобренных) -->
-                            {% if message.ai_approved and message.ai_result %}
-                                <div class="alert alert-success alert-sm mb-2">
-                                    <strong><i class="fas fa-robot"></i> ИИ:</strong> {{ message.ai_result|truncatewords:30 }}
-                                    {% if message.ai_score %}
-                                    <span class="badge bg-success ms-2">Оценка: {{ message.ai_score|floatformat:2 }}</span>
-                                    {% endif %}
-                                </div>
-                            {% endif %}
                             
                             <small class="text-muted">
                                 {{ message.processed_at|date:"d.m.Y H:i" }}
