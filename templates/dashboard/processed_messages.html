@@ -53,26 +53,26 @@
                         <label class="form-label">Статус ИИ</label>
                         <select name="ai_status" class="form-select">
                             <option value="">Все</option>
-                            <option value="approved" {% if ai_status_filter == 'approved' %}selected{% endif %}>✓ Одобрено ИИ</option>
-                            <option value="rejected" {% if ai_status_filter == 'rejected' %}selected{% endif %}>✗ Отклонено ИИ</option>
+                            <option value="approved" {% if ai_status_filter == 'approved' %}selected{% endif %}>Одобрено ИИ</option>
+                            <option value="rejected" {% if ai_status_filter == 'rejected' %}selected{% endif %}>Отклонено ИИ</option>
                         </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Качество</label>
                         <select name="status" class="form-select">
                             <option value="">Все</option>
-                            <option value="none" {% if status_filter == 'none' %}selected{% endif %}>⚪ Неотработанные</option>
-                            <option value="qualified" {% if status_filter == 'qualified' %}selected{% endif %}>⭐ Квал</option>
-                            <option value="unqualified" {% if status_filter == 'unqualified' %}selected{% endif %}>❌ Неквал</option>
-                            <option value="spam" {% if status_filter == 'spam' %}selected{% endif %}>🚫 Спам</option>
+                            <option value="none" {% if status_filter == 'none' %}selected{% endif %}>Неотработанные</option>
+                            <option value="qualified" {% if status_filter == 'qualified' %}selected{% endif %}>Квал</option>
+                            <option value="unqualified" {% if status_filter == 'unqualified' %}selected{% endif %}>Неквал</option>
+                            <option value="spam" {% if status_filter == 'spam' %}selected{% endif %}>Спам</option>
                         </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Диалог/Продажа</label>
                         <select name="progress" class="form-select">
                             <option value="">Все</option>
-                            <option value="dialog" {% if request.GET.progress == 'dialog' %}selected{% endif %}>💬 Диалог начат</option>
-                            <option value="sale" {% if request.GET.progress == 'sale' %}selected{% endif %}>💰 Есть продажа</option>
+                            <option value="dialog" {% if request.GET.progress == 'dialog' %}selected{% endif %}>Диалог начат</option>
+                            <option value="sale" {% if request.GET.progress == 'sale' %}selected{% endif %}>Есть продажа</option>
                         </select>
                     </div>
                     <div class="col-md-2">
