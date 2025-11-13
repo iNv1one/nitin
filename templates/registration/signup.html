@@ -13,7 +13,7 @@
     
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #ffffff;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -35,10 +35,9 @@
             margin-bottom: 2rem;
         }
         
-        .signup-header i {
-            font-size: 3rem;
-            color: #28a745;
-            margin-bottom: 1rem;
+        .signup-header h2 {
+            color: #333;
+            margin-bottom: 0.5rem;
         }
         
         .btn-signup {
@@ -56,15 +55,14 @@
         }
         
         .form-control:focus {
-            border-color: #28a745;
-            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+            border-color: #333;
+            box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
     <div class="signup-card">
         <div class="signup-header">
-            <i class="fas fa-user-plus"></i>
             <h2>Регистрация</h2>
             <p class="text-muted">Создайте свой аккаунт</p>
         </div>
@@ -145,7 +143,7 @@
                 </div>
             {% endif %}
             
-            <button type="submit" class="btn btn-success btn-signup">
+            <button type="submit" class="btn btn-dark btn-signup">
                 <i class="fas fa-user-plus"></i> Зарегистрироваться
             </button>
             
