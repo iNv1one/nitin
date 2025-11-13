@@ -130,7 +130,7 @@
                     </a>
                     <a class="nav-link {% if 'raw_messages' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'dashboard:raw_messages' %}">
-                        <i class="fas fa-bug"></i> Сырые сообщения
+                        <i class="fas fa-bug"></i> Поток
                     </a>
                     
                     {% if user.is_staff %}
