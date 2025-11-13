@@ -162,19 +162,19 @@ def create_keyword_group(request):
             messages.error(request, error_msg)
             return render(request, 'dashboard/create_keyword_group.html')
         
-        # Проверяем лимиты подписки
-        current_groups = KeywordGroup.objects.filter(user=request.user).count()
-        max_groups = request.user.get_keyword_groups_limit()
-        
-        if current_groups >= max_groups:
-            error_msg = f'Достигнут лимит групп ключевых слов для вашего тарифа ({max_groups}).'
-            
-            # AJAX запрос
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'message': error_msg})
-            
-            messages.error(request, error_msg)
-            return redirect('dashboard:keyword_groups')
+        # Проверяем лимиты подписки - ВРЕМЕННО ОТКЛЮЧЕНО
+        # current_groups = KeywordGroup.objects.filter(user=request.user).count()
+        # max_groups = request.user.get_keyword_groups_limit()
+        # 
+        # if current_groups >= max_groups:
+        #     error_msg = f'Достигнут лимит групп ключевых слов для вашего тарифа ({max_groups}).'
+        #     
+        #     # AJAX запрос
+        #     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        #         return JsonResponse({'success': False, 'message': error_msg})
+        #     
+        #     messages.error(request, error_msg)
+        #     return redirect('dashboard:keyword_groups')
         
         # Парсим ключевые слова (разделенные запятыми или переносами строк)
         keywords_list = [kw.strip() for kw in keywords.replace('\n', ',').split(',') if kw.strip()]
