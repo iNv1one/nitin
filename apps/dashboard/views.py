@@ -866,6 +866,11 @@ def toggle_all_global_chats(request):
 @login_required
 @require_http_methods(['GET'])
 def parser_control(request):
+    # Проверяем права администратора
+    if not request.user.is_staff:
+        messages.warning(request, 'Доступ к управлению парсером разрешен только администраторам')
+        return redirect('dashboard:statistics')
+    
     bot_status, created = BotStatus.objects.get_or_create(bot_username='master_parser', defaults={'is_running': False})
     total_global_chats = GlobalChat.objects.filter(is_active=True).count()
     total_users = User.objects.filter(is_active=True).count()
